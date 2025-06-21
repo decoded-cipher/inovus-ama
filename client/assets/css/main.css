@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: "Inter", system-ui, sans-serif;
+  }
+}
+
+@layer components {
+  .glass-effect {
+    @apply bg-white/80 backdrop-blur-xl border border-slate-200/60;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-transparent;
+  }
+
+  .stat-card {
+    @apply text-center p-3 rounded-xl border;
+  }
+
+  .stat-card-blue {
+    @apply stat-card bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100/60;
+  }
+
+  .stat-card-green {
+    @apply stat-card bg-gradient-to-br from-emerald-50 to-green-50 border-emerald-100/60;
+  }
+
+  .stat-card-purple {
+    @apply stat-card bg-gradient-to-br from-purple-50 to-pink-50 border-purple-100/60;
+  }
+}

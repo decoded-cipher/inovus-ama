@@ -47,6 +47,8 @@
   </div>
 </template>
 
+
+
 <script setup lang="ts">
 import { ref } from 'vue'
 
@@ -92,34 +94,65 @@ const handleQuestionClick = (question: string) => {
   closeSidebar()
 }
 
-const handleSubmit = async () => {
-  if (!input.value.trim() || isLoading.value) return
+const config = useRuntimeConfig()
 
-  const userMessage: Message = {
-    id: Date.now().toString(),
-    content: input.value.trim(),
-    role: 'user',
-    timestamp: new Date(),
+const handleSubmit = async () => {
+  if (!canAskToday()) {
+    messages.value.push({
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: "You've reached your daily question limit. Try again tomorrow!",
+      timestamp: new Date(),
+    });
+    return;
   }
 
-  messages.value.push(userMessage)
-  const currentInput = input.value.trim()
+  if (!input.value.trim() || isLoading.value) return;
+
+  const question = input.value.trim()
+
+  messages.value.push({
+    id: Date.now().toString(),
+    content: question,
+    role: 'user',
+    timestamp: new Date(),
+  });
+
   input.value = ''
   isLoading.value = true
   closeSidebar()
 
-  // Simulate AI response
-  setTimeout(() => {
-    const assistantMessage: Message = {
+  try {
+    const res = await fetch(`https://api.cloudflare.com/client/v4/autorag/${config.public.autoragInstanceId}/ask`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${config.public.autoragApiToken}`,
+      },
+      body: JSON.stringify({ question }),
+    });
+
+    const data = await res.json();
+
+    messages.value.push({
       id: (Date.now() + 1).toString(),
-      content: `Thank you for your question about "${currentInput}". I'd be happy to provide detailed information about Inovus Labs. In a production environment, I would access our comprehensive knowledge base to give you accurate, up-to-date information about our programs, research, and opportunities.`,
+      content: data.answer ?? "Sorry, I can only answer questions about Inovus Labs.",
       role: 'assistant',
       timestamp: new Date(),
-    }
-    messages.value.push(assistantMessage)
+    });
+
+  } catch (err) {
+    messages.value.push({
+      id: (Date.now() + 1).toString(),
+      content: "Something went wrong. Please try again later.",
+      role: 'assistant',
+      timestamp: new Date(),
+    });
+  } finally {
     isLoading.value = false
-  }, 1500)
+  }
 }
+
 
 // SEO
 useHead({

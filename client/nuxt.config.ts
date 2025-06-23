@@ -1,4 +1,4 @@
-// https://nuxt.com/docs/api/configuration/nuxt-config
+
 export default defineNuxtConfig({
   devtools: { enabled: true },
   modules: ["@nuxtjs/tailwindcss", "@nuxtjs/color-mode", "@vueuse/nuxt", "nuxt-icon"],
@@ -17,5 +17,12 @@ export default defineNuxtConfig({
         { name: "keywords", content: "InoBot, Inovus Labs, AI Assistant, Questions, Programs, Research" },
       ],
     },
+  },
+  compatibilityDate: "2025-06-22",
+  runtimeConfig: {
+    public: {
+      autoragInstanceId: process.env.NUXT_AUTORAG_INSTANCE_ID,
+      autoragApiToken: process.env.NUXT_AUTORAG_API_TOKEN,
+    }
   },
 })

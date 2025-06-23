@@ -52,7 +52,7 @@ export default defineNuxtConfig({
           content: "Get instant, intelligent answers about Inovus Labs programs, research, certifications, and community opportunities from InoBot.",
         },
         { property: "og:url", content: "https://ama.inovuslabs.org" },
-        { property: "og:image", content: "https://ama.inovuslabs.org/og-image.png" },
+        { property: "og:image", content: "https://ama.inovuslabs.org/og-image.jpg" },
         { property: "og:image:width", content: "1200" },
         { property: "og:image:height", content: "630" },
         { property: "og:image:alt", content: "InoBot - AI Assistant for Inovus Labs" },
@@ -67,7 +67,7 @@ export default defineNuxtConfig({
           name: "twitter:description",
           content: "Get instant, intelligent answers about Inovus Labs programs, research, and opportunities.",
         },
-        { name: "twitter:image", content: "https://ama.inovuslabs.org/og-image.png" },
+        { name: "twitter:image", content: "https://ama.inovuslabs.org/og-image.jpg" },
         { name: "twitter:image:alt", content: "InoBot AI Assistant Interface" },
 
         // Additional SEO

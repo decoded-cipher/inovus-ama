@@ -155,10 +155,29 @@ const handleSubmit = async () => {
 
 
 // SEO
+// SEO Meta
 useHead({
-  title: 'InoBot - Inovus Labs AI Assistant',
+  title: 'InoBot - AI Assistant for Inovus Labs | Ask Anything About Our Programs',
   meta: [
-    { name: 'description', content: 'Ask InoBot anything about Inovus Labs - programs, research, certifications, and community.' }
+    {
+      name: 'description',
+      content: 'InoBot is your intelligent AI assistant for Inovus Labs. Get instant answers about our research programs, certifications, community opportunities, and innovation initiatives. Powered by advanced AI technology including AutoRAG, Cloudflare R2, and Vectorize database.'
+    },
+    {
+      name: 'keywords',
+      content: 'InoBot, Inovus Labs, AI Assistant, Research Programs, Certifications, Innovation, Technology, Machine Learning, AutoRAG, Vectorize, Cloudflare, AI Chatbot'
+    },
+    // Open Graph
+    { property: 'og:title', content: 'InoBot - AI Assistant for Inovus Labs' },
+    { property: 'og:description', content: 'Get instant, intelligent answers about Inovus Labs programs, research, certifications, and community opportunities from InoBot.' },
+    { property: 'og:type', content: 'website' },
+    { property: 'og:url', content: 'https://ama.inovuslabs.org' },
+    // Twitter
+    { name: 'twitter:title', content: 'InoBot - AI Assistant for Inovus Labs' },
+    { name: 'twitter:description', content: 'Get instant, intelligent answers about Inovus Labs programs, research, and opportunities.' }
+  ],
+  link: [
+    { rel: 'canonical', href: 'https://ama.inovuslabs.org' }
   ]
 })
 </script>

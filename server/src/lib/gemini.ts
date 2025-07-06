@@ -2,15 +2,28 @@
 import { env } from 'hono/adapter'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY)
-const model = genAI.getGenerativeModel({ model: 'models/gemini-pro' })
+const GEMINI_API_KEY = env.GEMINI_API_KEY || 'AIzaSyDQzu-HUDuOgwFsDa1A3iElwqn0zBDihNI'
+
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
+const model = genAI.getGenerativeModel({ model: 'models/gemini-2.5-flash' })
 const embedModel = genAI.getGenerativeModel({ model: 'models/embedding-001' })
 
 
 
 // Get vector embedding from Gemini for a given text
 export async function getEmbedding(text: string): Promise<number[]> {
+  console.log(`Generating embedding for text: "${text.slice(0, 50)}..."`);
+  
   const result = await embedModel.embedContent({ content: { parts: [{ text }] } })
+  if (!result.embedding || !result.embedding.values) {
+    throw new Error('Failed to generate embedding')
+  }
+
+  console.log(`Generated embedding of length: ${result.embedding.values.length}`);
+  if (result.embedding.values.length === 0) {
+    throw new Error('Embedding is empty')
+  }
+  
   return result.embedding.values
 }
 

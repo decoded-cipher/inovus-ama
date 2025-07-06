@@ -1,6 +1,5 @@
 import { env } from 'hono/adapter'
 
-const baseUrl = `https://${env.PINECONE_INDEX}-${env.PINECONE_PROJECT_ID}.svc.${env.PINECONE_ENVIRONMENT}.pinecone.io`
 
 export interface VectorMatch {
   id: string
@@ -8,13 +7,19 @@ export interface VectorMatch {
   metadata: any
 }
 
+const PINECONE_ENVIRONMENT = env.PINECONE_ENVIRONMENT || 'https://inovus-ama-nhrc3r1.svc.aped-4627-b74a.pinecone.io'
+const PINECONE_API_KEY = env.PINECONE_API_KEY || 'pcsk_2tSPGi_CWZZ1UJ5CDEMcmib1mzrGmxH8Tvkamxtq9dx2gVMh9EK2591en5qP8n1HPHJwfV'
+
+
 // Query Pinecone for top matching chunks
 export async function searchVectorizeDB(queryVector: number[]): Promise<VectorMatch[]> {
-  const response = await fetch(`${baseUrl}/query`, {
+  console.log(`Searching Pinecone for vector: ${queryVector.slice(0, 5)}...`)
+
+  const response = await fetch(`${PINECONE_ENVIRONMENT}/query`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Api-Key': env.PINECONE_API_KEY,
+      'Api-Key': PINECONE_API_KEY,
     },
     body: JSON.stringify({
       vector: queryVector,
@@ -32,13 +37,15 @@ export async function searchVectorizeDB(queryVector: number[]): Promise<VectorMa
   }))
 }
 
+
+
 // Insert a new vector and associated metadata
 export async function insertVector(embedding: number[], content: string, metadata: any): Promise<void> {
-  await fetch(`${baseUrl}/vectors/upsert`, {
+  await fetch(`${PINECONE_ENVIRONMENT}/vectors/upsert`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Api-Key': env.PINECONE_API_KEY,
+      'Api-Key': PINECONE_API_KEY,
     },
     body: JSON.stringify({
       vectors: [

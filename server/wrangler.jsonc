@@ -2,7 +2,7 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "inobot-server",
   "main": "src/index.ts",
-  "compatibility_date": "2025-06-23",
+  "compatibility_date": "2025-06-17",
   "r2_buckets": [
     {
       "binding": "DOCS_BUCKET",
@@ -10,11 +10,10 @@
     }
   ],
   "vars": {
-    "PINECONE_API_KEY": "",
-    "PINECONE_INDEX": "",
-    "PINECONE_PROJECT_ID": "",
-    "PINECONE_ENVIRONMENT": "",
-    "GEMINI_API_KEY": "",
+    "PINECONE_API_KEY": "pcsk_2tSPGi_CWZZ1UJ5CDEMcmib1mzrGmxH8Tvkamxtq9dx2gVMh9EK2591en5qP8n1HPHJwfV",
+    "PINECONE_INDEX": "inovus-ama",
+    "PINECONE_ENVIRONMENT": "https://inovus-ama-nhrc3r1.svc.aped-4627-b74a.pinecone.io",
+    "GEMINI_API_KEY": "AIzaSyDQzu-HUDuOgwFsDa1A3iElwqn0zBDihNI",
     "MCP_SERVER_URL": ""
   }
 }

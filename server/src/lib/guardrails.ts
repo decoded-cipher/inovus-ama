@@ -5,6 +5,8 @@ import { searchVectorizeDB } from './vectorizeDB'
 
 // Checks if the question is relevant to Inovus Labs
 export async function isInovusQuestion(question: string): Promise<boolean> {
+  console.log(`Checking if question is relevant: "${question}"`);
+  
   const embedding = await getEmbedding(question)
   const matches = await searchVectorizeDB(embedding)
   return matches.length > 0

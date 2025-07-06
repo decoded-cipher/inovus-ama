@@ -14,7 +14,7 @@ An AI-powered, self-hosted Ask-Me-Anything system for Inovus Labs. Ask questions
 This project implements a custom **Retrieval Augmented Generation (RAG)** pipeline using:
 
 ✅  **Gemini API** for both embeddings and answer generation  
-✅  **Cloudflare Vectorize DB** for efficient, scalable vector search  
+✅  **Pinecone** for efficient, scalable vector search
 ✅  **Cloudflare R2** for secure document storage  
 ✅  A modern **Nuxt 3** frontend for seamless user interaction  
 ✅  Node.js + Hono API backend for orchestrating the RAG flow  
@@ -34,7 +34,7 @@ Check out the live demo at [Inovus Labs AMA](https://ama.inovuslabs.com) (curren
 |-----------------|-------------------------------------|
 | Frontend        | Nuxt 3 (Vue 3) + Tailwind CSS      |
 | RAG Backend     | Node.js + Hono                     |
-| Vector Storage  | VectorizeDB                        |
+| Vector Storage  | Pinecone                           |
 | Document Storage| Cloudflare R2                      |
 | Embeddings      | Gemini API (embedding-001)         |
 | Completion      | Gemini API (models/gemini-pro)     |
@@ -49,18 +49,20 @@ Check out the live demo at [Inovus Labs AMA](https://ama.inovuslabs.com) (curren
 ✅ Gemini-powered completion with custom prompts  
 ✅ Scalable, production-grade RAG setup  
 ✅ Rate limiting & abuse prevention  
-✅ Clean, mobile-friendly chat interface  
-✅ Future-ready for live knowledge via MCP Server  
+✅ Clean, mobile-friendly chat interface
+✅ Future-ready for live knowledge via MCP Server
+✅ Upload files of any format via a dedicated API route
+✅ Sources for each answer are returned for UI display
 
 
 ## 🛠️ How It Works
 
 1. User asks a question via the Nuxt frontend
 2. API server generates a question embedding (Gemini)
-3. VectorizeDB returns relevant knowledge chunks
+3. Pinecone returns relevant knowledge chunks
 4. System composes a grounded prompt
 5. Gemini API generates a final answer
-6. Response is displayed in the chat UI
+6. Response with source references is displayed in the chat UI
 
 In the future, the system will also pull real-time knowledge from the **Inovus MCP Server**.
 
@@ -75,4 +77,4 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 * [ ] Streaming answers to frontend
 * [ ] Advanced rate limiting with Cloudflare Workers
 * [ ] **MCP Server integration for real-time knowledge**
-* [ ] Source citations and traceability
+* [x] Source citations and traceability

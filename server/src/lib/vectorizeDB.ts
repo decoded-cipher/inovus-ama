@@ -1,33 +1,53 @@
-
 import { env } from 'hono/adapter'
 
+const baseUrl = `https://${env.PINECONE_INDEX}-${env.PINECONE_PROJECT_ID}.svc.${env.PINECONE_ENVIRONMENT}.pinecone.io`
 
-// Query VectorizeDB for the top matching chunks
-export async function searchVectorizeDB(queryVector: number[]): Promise<string[]> {
-  const response = await fetch(`${env.VECTORIZE_DB_URL}/search`, {
+export interface VectorMatch {
+  id: string
+  content: string
+  metadata: any
+}
+
+// Query Pinecone for top matching chunks
+export async function searchVectorizeDB(queryVector: number[]): Promise<VectorMatch[]> {
+  const response = await fetch(`${baseUrl}/query`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${env.VECTORIZE_DB_TOKEN}`
+      'Api-Key': env.PINECONE_API_KEY,
     },
-    body: JSON.stringify({ vector: queryVector, topK: 5 })
+    body: JSON.stringify({
+      vector: queryVector,
+      topK: 5,
+      includeMetadata: true,
+    }),
   })
 
   if (!response.ok) return []
   const results = await response.json()
-  return results.matches.map((m: any) => m.content)
+  return (results.matches || []).map((m: any) => ({
+    id: m.id,
+    content: m.metadata?.content || '',
+    metadata: m.metadata || {},
+  }))
 }
 
-
-
-// Insert a new chunk into the vector store
+// Insert a new vector and associated metadata
 export async function insertVector(embedding: number[], content: string, metadata: any): Promise<void> {
-  await fetch(`${env.VECTORIZE_DB_URL}/insert`, {
+  await fetch(`${baseUrl}/vectors/upsert`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${env.VECTORIZE_DB_TOKEN}`
+      'Api-Key': env.PINECONE_API_KEY,
     },
-    body: JSON.stringify({ vector: embedding, content, metadata })
+    body: JSON.stringify({
+      vectors: [
+        {
+          id: crypto.randomUUID(),
+          values: embedding,
+          metadata: { content, ...metadata },
+        },
+      ],
+    }),
   })
 }

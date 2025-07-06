@@ -10,6 +10,7 @@ import { trimTrailingSlash } from 'hono/trailing-slash'
 
 import { getEmbedding, askGemini } from './lib/gemini'
 import { searchVectorizeDB, insertVector } from './lib/vectorizeDB'
+import { uploadToR2 } from './lib/r2'
 import { isInovusQuestion, needsLiveData } from './lib/guardrails'
 import { getLiveMCPData } from './lib/mcp'
 
@@ -63,13 +64,15 @@ app.post('/ask', async (c) => {
     }
 
     const embedding = await getEmbedding(question)
-    const contextChunks = await searchVectorizeDB(embedding)
+    const matches = await searchVectorizeDB(embedding)
+    const contextChunks = matches.map(m => m.content)
     
     const requireLiveData = await needsLiveData(question)
     const liveData = requireLiveData ? await getLiveMCPData() : ''
 
     const answer = await askGemini(question, contextChunks, liveData)
-    return c.json({ answer })
+    const references = matches.map(m => m.metadata)
+    return c.json({ answer, references })
   } catch (e) {
     return c.json({ error: 'Server error', detail: (e as any).message }, 500)
   }
@@ -87,6 +90,37 @@ app.post('/ingest', async (c) => {
     const embedding = await getEmbedding(content)
     await insertVector(embedding, content, metadata || {})
     return c.json({ success: true })
+  } catch (e) {
+    return c.json({ error: 'Server error', detail: (e as any).message }, 500)
+  }
+})
+
+// Upload API for files of any format
+app.post('/upload', async (c) => {
+  try {
+    const body = await c.req.parseBody()
+    const file = body['file']
+    if (!(file instanceof File)) {
+      return c.json({ error: 'Missing file' }, 400)
+    }
+
+    const metaRaw = body['metadata']
+    let metadata
+    if (typeof metaRaw === 'string') {
+      try { metadata = JSON.parse(metaRaw) } catch { metadata = {} }
+    } else { metadata = {} }
+
+    const key = await uploadToR2(file)
+
+    let text = ''
+    try { text = await file.text() } catch { text = '' }
+
+    if (text) {
+      const embedding = await getEmbedding(text)
+      await insertVector(embedding, key, { filename: file.name, ...metadata })
+    }
+
+    return c.json({ success: true, key })
   } catch (e) {
     return c.json({ error: 'Server error', detail: (e as any).message }, 500)
   }

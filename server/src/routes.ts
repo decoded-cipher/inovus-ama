@@ -4,7 +4,7 @@ const router = new Hono();
 
 import { uploadToR2 } from './lib/r2'
 import { getLiveMCPData } from './lib/mcp'
-import { getEmbedding, askGemini } from './lib/gemini'
+import { getEmbedding, askGemini, generateFollowUpSuggestions } from './lib/gemini'
 import { isInovusQuestion, needsLiveData } from './lib/guardrails'
 import { searchVectorizeDB, insertVector } from './lib/vectorizeDB'
 
@@ -13,10 +13,26 @@ import { searchVectorizeDB, insertVector } from './lib/vectorizeDB'
 // Main API endpoint for asking questions
 router.post('/ask', async (c) => {
   try {
-    const { question } = await c.req.json()
+    const { question, conversationHistory = [] } = await c.req.json()
     if (!question || typeof question !== 'string' || question.length < 5) {
       return c.json({ error: 'Invalid or too short question.' }, 400)
     }
+
+    // Validate conversation history format
+    const validatedHistory = Array.isArray(conversationHistory) 
+      ? conversationHistory
+          .filter(msg => 
+            msg && 
+            typeof msg === 'object' && 
+            typeof msg.content === 'string' && 
+            ['user', 'assistant'].includes(msg.role)
+          )
+          .map(msg => ({
+            role: msg.role,
+            content: msg.content,
+            timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date()
+          }))
+      : []
 
     // Guardrail: ensure question is about Inovus Labs
     // const relevant = await isInovusQuestion(question)
@@ -31,9 +47,25 @@ router.post('/ask', async (c) => {
     const requireLiveData = await needsLiveData(question)
     const liveData = requireLiveData ? await getLiveMCPData() : ''
 
-    const answer = await askGemini(question, contextChunks, liveData)
+    const answer = await askGemini(question, contextChunks, liveData, validatedHistory)
     const references = matches.map(m => m.metadata)
-    return c.json({ answer, references })
+    
+    // Generate follow-up suggestions if there's conversation history
+    let followUpSuggestions: string[] = []
+    if (validatedHistory.length > 0) {
+      const conversationContext = validatedHistory
+        .slice(-2) // Last 2 messages for context
+        .map(msg => `${msg.role}: ${msg.content}`)
+        .join('\n')
+      
+      followUpSuggestions = await generateFollowUpSuggestions(answer, conversationContext)
+    }
+    
+    return c.json({ 
+      answer, 
+      references, 
+      followUpSuggestions: followUpSuggestions.length > 0 ? followUpSuggestions : undefined 
+    })
   } catch (e) {
     return c.json({ error: 'Server error', detail: (e as any).message }, 500)
   }

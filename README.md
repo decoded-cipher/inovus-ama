@@ -30,29 +30,25 @@ Check out the live demo at [Inovus Labs AMA](https://ama.inovuslabs.com) (curren
 
 ## 🗂️ Tech Stack
 
-| Layer           | Technology                         |
-|-----------------|-------------------------------------|
-| Frontend        | Nuxt 3 (Vue 3) + Tailwind CSS      |
-| RAG Backend     | Node.js + Hono                     |
-| Vector Storage  | Pinecone                           |
-| Document Storage| Cloudflare R2                      |
-| Embeddings      | Gemini API (embedding-001)         |
-| Completion      | Gemini API (models/gemini-pro)     |
-| Deployment      | Cloudflare Workers / Pages (optional) |
-| **Planned**     | MCP Server for live data           |
+| Layer           | Technology                             |
+|-----------------|----------------------------------------|
+| Frontend        | Nuxt 3 (Vue 3) + Tailwind CSS          |
+| RAG Backend     | Node.js + Hono                         |
+| Vector Storage  | Pinecone                               |
+| Document Storage| Cloudflare R2                          |
+| Embeddings      | Gemini API (embedding-001)             |
+| Completion      | Gemini API (models/gemini-2.5-flash)   |
+| Deployment      | Cloudflare Workers / Pages             |
+| **Planned**     | MCP Server for live data               |
 
 
 ## 💡 Features
 
-✅ Real answers based on your documents  
-✅ Full control over vectorization & search  
-✅ Gemini-powered completion with custom prompts  
-✅ Scalable, production-grade RAG setup  
-✅ Rate limiting & abuse prevention  
-✅ Clean, mobile-friendly chat interface
-✅ Future-ready for live knowledge via MCP Server
-✅ Upload files of any format via a dedicated API route
-✅ Sources for each answer are returned for UI display
+✅ Conversation History & Context Awareness  
+✅ Intelligent Follow-up Question Detection  
+✅ Smart Conversation Summarization (token optimization)  
+✅ Dynamic Follow-up Suggestions  
+✅ Clear Conversation functionality
 
 
 ## 🛠️ How It Works

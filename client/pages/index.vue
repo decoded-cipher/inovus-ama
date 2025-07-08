@@ -21,6 +21,7 @@
         :suggested-questions="suggestedQuestions"
         :is-loading="isLoading"
         @question-click="handleQuestionClick"
+        @clear-conversation="clearConversation"
       />
 
       <!-- Right Side - Chat -->
@@ -50,7 +51,8 @@
 
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import { canAskToday } from '~/composables/useRateLimit'
 
 interface Message {
   id: string
@@ -63,7 +65,7 @@ interface Message {
 const messages = ref<Message[]>([
   {
     id: '1',
-    content: "Hello! I'm InoBot, your intelligent assistant for everything Inovus Labs. I can help you learn about our programs, research initiatives, certification processes, and community opportunities. What would you like to explore today?",
+    content: "Hello! I'm InoBot, your intelligent assistant for everything Inovus Labs. I can help you learn about our programs, research initiatives, certification processes, and community opportunities. Feel free to ask follow-up questions to dive deeper into any topic. What would you like to explore today?",
     role: 'assistant',
     timestamp: new Date(),
   },
@@ -72,13 +74,23 @@ const messages = ref<Message[]>([
 const input = ref('')
 const isLoading = ref(false)
 const showSidebar = ref(false)
+const dynamicSuggestions = ref<string[]>([])
 
-const suggestedQuestions = [
-  "What is Inovus Labs' mission?",
-  "How can I get certified?",
-  "What research projects are active?",
-  "How do I join the community?",
-]
+const suggestedQuestions = computed(() => {
+  const base = [
+    "What is Inovus Labs' mission?",
+    "How can I get certified?",
+    "What research projects are active?",
+    "How do I join the community?",
+  ]
+  
+  // If we have dynamic suggestions from the last response, show those instead
+  if (dynamicSuggestions.value.length > 0) {
+    return [...dynamicSuggestions.value, ...base.slice(0, 4 - dynamicSuggestions.value.length)]
+  }
+  
+  return base
+})
 
 // Methods
 const toggleSidebar = () => {
@@ -123,34 +135,89 @@ const handleSubmit = async () => {
   closeSidebar()
 
   try {
-    const res = await fetch(`https://api.cloudflare.com/client/v4/autorag/${config.public.autoragInstanceId}/ask`, {
+    // Prepare conversation history (exclude the initial greeting and current question)
+    const conversationHistory = messages.value
+      .slice(1, -1) // Skip initial greeting and current question
+      .map(msg => ({
+        role: msg.role,
+        content: msg.content,
+        timestamp: msg.timestamp
+      }))
+
+    const res = await fetch('/api/ask', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.public.autoragApiToken}`,
       },
-      body: JSON.stringify({ question }),
+      body: JSON.stringify({ 
+        question,
+        conversationHistory 
+      }),
     });
+
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`)
+    }
 
     const data = await res.json();
 
-    messages.value.push({
+    if (data.error) {
+      throw new Error(data.error)
+    }
+
+    const assistantMessage = {
       id: (Date.now() + 1).toString(),
       content: data.answer ?? "Sorry, I can only answer questions about Inovus Labs.",
-      role: 'assistant',
+      role: 'assistant' as const,
       timestamp: new Date(),
-    });
+    }
+
+    messages.value.push(assistantMessage);
+
+    // Update dynamic suggestions if provided
+    if (data.followUpSuggestions && Array.isArray(data.followUpSuggestions)) {
+      dynamicSuggestions.value = data.followUpSuggestions
+    } else {
+      dynamicSuggestions.value = []
+    }
 
   } catch (err) {
+    console.error('Chat error:', err)
+    
+    let errorMessage = "Something went wrong. Please try again later."
+    
+    if (err instanceof Error) {
+      if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+        errorMessage = "Unable to connect to the server. Please check your internet connection and try again."
+      } else if (err.message.includes('HTTP error! status: 429')) {
+        errorMessage = "Too many requests. Please wait a moment before trying again."
+      } else if (err.message.includes('HTTP error! status: 400')) {
+        errorMessage = "Invalid question format. Please try rephrasing your question."
+      }
+    }
+
     messages.value.push({
       id: (Date.now() + 1).toString(),
-      content: "Something went wrong. Please try again later.",
+      content: errorMessage,
       role: 'assistant',
       timestamp: new Date(),
     });
   } finally {
     isLoading.value = false
   }
+}
+
+const clearConversation = () => {
+  messages.value = [
+    {
+      id: '1',
+      content: "Hello! I'm InoBot, your intelligent assistant for everything Inovus Labs. I can help you learn about our programs, research initiatives, certification processes, and community opportunities. Feel free to ask follow-up questions to dive deeper into any topic. What would you like to explore today?",
+      role: 'assistant',
+      timestamp: new Date(),
+    },
+  ]
+  dynamicSuggestions.value = []
+  closeSidebar()
 }
 
 

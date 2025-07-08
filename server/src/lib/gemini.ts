@@ -18,7 +18,12 @@ interface ConversationMessage {
 
 
 
-// Get vector embedding from Gemini for a given text
+/**
+ * Generates an embedding for the given text using Gemini's embedding model.
+ * @param text - The text to embed
+ * @returns A promise that resolves to the embedding vector
+ */
+
 export async function getEmbedding(text: string): Promise<number[]> {
   console.log(`Generating embedding for text: "${text.slice(0, 50)}..."`);
   
@@ -37,7 +42,12 @@ export async function getEmbedding(text: string): Promise<number[]> {
 
 
 
-// Summarize conversation history to reduce tokens
+/**
+ * Summarizes a conversation history into a concise summary.
+ * @param messages - Array of conversation messages
+ * @returns A promise that resolves to the summary text
+ */
+
 export async function summarizeConversation(messages: ConversationMessage[]): Promise<string> {
   if (messages.length === 0) return ''
   
@@ -59,7 +69,12 @@ export async function summarizeConversation(messages: ConversationMessage[]): Pr
 
 
 
-// Check if a question is a follow-up that references previous conversation
+/**
+ * Checks if a question is likely a follow-up based on common indicators.
+ * @param question - The question to analyze
+ * @returns A promise that resolves to true if it's a follow-up, false otherwise
+ */
+
 export async function isFollowUpQuestion(question: string): Promise<boolean> {
   const followUpIndicators = [
     'tell me more', 'elaborate', 'can you explain', 'what about', 'more details',
@@ -74,7 +89,16 @@ export async function isFollowUpQuestion(question: string): Promise<boolean> {
 
 
 
-// Enhanced conversation-aware prompt generation
+/**
+ * Generates a follow-up prompt based on the question, context, live data, and conversation summary.
+ * @param question - The user's question
+ * @param context - Static context information
+ * @param liveData - Any live data relevant to the question
+ * @param conversationSummary - Summary of previous conversation messages
+ * @param isFollowUp - Whether the question is a follow-up
+ * @returns A promise that resolves to the generated prompt string
+ */
+
 export async function generateFollowUpPrompt(
   question: string,
   context: string,
@@ -84,38 +108,50 @@ export async function generateFollowUpPrompt(
 ): Promise<string> {
   if (isFollowUp && conversationSummary) {
     return `
-      You are an expert assistant for Inovus Labs. The user is asking a follow-up question based on previous conversation.
-      
-      Static Context: ${context}
-      
-      ${liveData ? `Live Data:\n${liveData}\n` : ''}
-      
-      Previous Conversation Context:\n${conversationSummary}
-      
-      Follow-up Question: ${question}
-      
-      The user is asking for more information about something previously discussed. Provide a detailed, helpful response that builds on the previous conversation. Reference previous topics naturally and provide additional depth, specific details, or actionable next steps. If the question is ambiguous (like "tell me more"), focus on the most recent relevant topic from the conversation.
+You are an assistant for Inovus Labs IEDC at Kristu Jyoti College (inovuslabs.org, @inovuslabs).
+
+Context: ${context}
+${liveData ? `Live Data: ${liveData}\n` : ''}
+Previous Context: ${conversationSummary}
+
+Follow-up: ${question}
+
+RULES:
+- Only answer Inovus Labs IEDC questions
+- Off-topic → Mention that you can only answer Inovus Labs IEDC questions
+- No info → Mention that you don't have that information and suggest checking the website or socials
+- Build on previous conversation naturally
     `.trim()
   } else {
     return `
-      You are an expert assistant for Inovus Labs. Use the provided context and conversation history to answer the question naturally.
-      
-      Static Context: ${context}
-      
-      ${liveData ? `Live Data:\n${liveData}\n` : ''}
-      
-      ${conversationSummary ? `Conversation History:\n${conversationSummary}\n` : ''}
+You are an assistant for Inovus Labs IEDC at Kristu Jyoti College (inovuslabs.org, @inovuslabs).
 
-      Current Question: ${question}
-      
-      Provide a helpful answer based on the context and previous conversation. If you don't have enough information, politely respond that you don't know or can't answer. Maintain conversational flow and reference previous topics when relevant.
-    `.trim()
+Context: ${context}
+${liveData ? `Live Data: ${liveData}\n` : ''}
+${conversationSummary ? `History: ${conversationSummary}\n` : ''}
+
+Question: ${question}
+
+RULES:
+- Only answer Inovus Labs IEDC questions
+- Topics: programs, events, startups, innovation, entrepreneurship, workshops, mentorship, funding
+- Off-topic → Mention that you can only answer Inovus Labs IEDC questions
+- No info → Mention that you don't have that information and suggest checking the website or socials
+`.trim()
   }
 }
 
 
 
-// Generates the answer with both static context, live data, and conversation history
+/**
+ * Asks Gemini a question with context, live data, and conversation history.
+ * @param question - The user's question
+ * @param chunks - Static context chunks to include
+ * @param liveData - Any live data relevant to the question
+ * @param conversationHistory - Previous conversation messages
+ * @returns A promise that resolves to the assistant's response
+ */
+
 export async function askGemini(
   question: string, 
   chunks: string[], 
@@ -151,10 +187,8 @@ export async function askGemini(
       .join('\n')
   }
   
-  // Check if this is a follow-up question
   const isFollowUp = await isFollowUpQuestion(question)
   
-  // Generate appropriate prompt based on whether it's a follow-up
   const prompt = await generateFollowUpPrompt(
     question, 
     context, 
@@ -163,26 +197,34 @@ export async function askGemini(
     isFollowUp
   )
 
+  console.log(`\nGenerated prompt for Gemini:\n\n${prompt}\n`)
+
   const result = await model.generateContent({ contents: [{ parts: [{ text: prompt }] }] })
   return result.response.text()
 }
 
 
 
-// Generate suggested follow-up questions based on the conversation context
+/**
+ * Generates follow-up suggestions based on the last assistant message and conversation context.
+ * @param lastAssistantMessage - The last message from the assistant
+ * @param conversationContext - The context of the conversation
+ * @returns A promise that resolves to an array of follow-up questions
+ */
+
 export async function generateFollowUpSuggestions(
   lastAssistantMessage: string,
   conversationContext: string
 ): Promise<string[]> {
   const prompt = `
-    Based on this assistant response and conversation context, generate 3 relevant follow-up questions that a user might want to ask next. Make them specific and actionable.
-    
-    Assistant's last response: ${lastAssistantMessage}
-    
-    Conversation context: ${conversationContext}
-    
-    Generate exactly 3 follow-up questions, one per line, without numbering or bullets:
-  `.trim()
+Based on this assistant response and conversation context, generate 3 relevant follow-up questions that a user might want to ask next. Make them specific and actionable.
+
+Assistant's last response: ${lastAssistantMessage}
+
+Conversation context: ${conversationContext}
+
+Generate exactly 1 follow-up questions, one per line, without numbering or bullets:
+`.trim()
 
   try {
     const result = await model.generateContent({ contents: [{ parts: [{ text: prompt }] }] })
@@ -197,7 +239,6 @@ export async function generateFollowUpSuggestions(
       "Are there any requirements I should know about?"
     ]
   } catch (error) {
-    // Fallback suggestions if generation fails
     return [
       "Can you elaborate on that?",
       "What else should I know?",

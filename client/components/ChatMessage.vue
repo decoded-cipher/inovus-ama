@@ -5,7 +5,7 @@
       message.role === 'user' ? 'flex-row-reverse space-x-reverse' : ''
     ]"
   >
-    <div
+    <!-- <div
       :class="[
         'w-6 h-6 sm:w-7 sm:h-7 flex-shrink-0 rounded-full flex items-center justify-center text-xs font-semibold',
         message.role === 'user'
@@ -13,13 +13,16 @@
           : 'bg-gradient-to-br from-slate-800 to-slate-900 text-white shadow-lg'
       ]"
     >
-      {{ message.role === 'user' ? 'You' : 'IB' }}
-    </div>
+      <Icon 
+        :name="message.role === 'user' ? 'heroicons:user-20-solid' : 'heroicons:cpu-chip-20-solid'" 
+        class="w-3 h-3 sm:w-4 sm:h-4"
+      />
+    </div> -->
 
     <div :class="['max-w-[85%] sm:max-w-[75%]', message.role === 'user' ? 'text-right' : '']">
       <div
         :class="[
-          'inline-block p-2.5 sm:p-3 rounded-lg sm:rounded-xl',
+          'inline-block p-2.5 sm:p-3 rounded sm:rounded-xl',
           message.role === 'user'
             ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25'
             : 'bg-white border border-slate-200/60 text-slate-900 shadow-sm'

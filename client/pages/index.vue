@@ -106,8 +106,6 @@ const handleQuestionClick = (question: string) => {
   closeSidebar()
 }
 
-const config = useRuntimeConfig()
-
 const handleSubmit = async () => {
   
   // if (!canAskToday()) {

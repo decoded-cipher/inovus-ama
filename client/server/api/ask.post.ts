@@ -24,10 +24,17 @@ export default defineEventHandler(async (event) => {
 
     // Get server URL from runtime config
     const config = useRuntimeConfig()
-    const serverUrl = config.public.serverUrl || 'http://localhost:8787/api/v1'
+    const serverUrl = config.public.serverUrl
+    
+    if (!serverUrl) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Server URL is not configured'
+      })
+    }
 
     // Forward the request to the actual server
-    const response = await $fetch(`${serverUrl}/ask`, {
+    const response = await $fetch(`${serverUrl}/api/v1/ask`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

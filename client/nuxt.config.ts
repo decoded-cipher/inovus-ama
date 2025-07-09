@@ -167,10 +167,7 @@ export default defineNuxtConfig({
   // Runtime config
   runtimeConfig: {
     public: {
-      gtag: process.env.GTAG_ID || "",
-      clarity: process.env.CLARITY_ID || "",
-      autoragInstanceId: process.env.NUXT_AUTORAG_INSTANCE_ID || "",
-      autoragApiToken: process.env.NUXT_AUTORAG_API_TOKEN || "",
+      serverUrl: process.env.NUXT_PUBLIC_SERVER_URL
     }
   },
 })

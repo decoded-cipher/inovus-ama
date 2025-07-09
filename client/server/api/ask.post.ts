@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
 
   try {
     const body = await readBody(event)
-    const { question, conversationHistory } = body
+    const { question, conversationHistory, turnstileToken } = body
 
     if (!question || typeof question !== 'string') {
       throw createError({
@@ -22,8 +22,40 @@ export default defineEventHandler(async (event) => {
       })
     }
 
+    // Get runtime config for Turnstile verification
+    const config = useRuntimeConfig(event)
+    
+    // Verify Turnstile token if provided
+    if (turnstileToken) {
+      try {
+        const turnstileResponse = await $fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            secret: config.turnstileSecretKey,
+            response: turnstileToken,
+            remoteip: getClientIP(event) || '',
+          }),
+        })
+
+        if (!turnstileResponse.success) {
+          throw createError({
+            statusCode: 403,
+            statusMessage: 'Turnstile verification failed'
+          })
+        }
+      } catch (turnstileError) {
+        console.error('Turnstile verification error:', turnstileError)
+        throw createError({
+          statusCode: 403,
+          statusMessage: 'Security verification failed'
+        })
+      }
+    }
+
     // Get server URL from runtime config
-    const config = useRuntimeConfig()
     const serverUrl = config.public.serverUrl
     
     if (!serverUrl) {

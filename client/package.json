@@ -19,6 +19,7 @@
     "@nuxtjs/robots": "^3.0.0",
     "@nuxtjs/seo": "^2.0.0",
     "@nuxtjs/sitemap": "^7.4.1",
+    "@nuxtjs/turnstile": "^1.0.0",
     "@vueuse/nuxt": "^10.5.0",
     "nuxt-icon": "^0.6.6"
   }

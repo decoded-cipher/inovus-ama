@@ -116,7 +116,7 @@ const handleQuestionClick = (question: string) => {
   closeSidebar()
 }
 
-const handleSubmit = async () => {
+const handleSubmit = async (turnstileToken?: string) => {
   // Don't allow submission when offline
   if (!healthStatus.value.isOnline) {
     messages.value.push({
@@ -163,15 +163,22 @@ const handleSubmit = async () => {
         timestamp: msg.timestamp
       }))
 
+    const requestBody: any = { 
+      question,
+      conversationHistory 
+    }
+
+    // Add Turnstile token if provided
+    if (turnstileToken) {
+      requestBody.turnstileToken = turnstileToken
+    }
+
     const res = await fetch('/api/ask', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ 
-        question,
-        conversationHistory 
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!res.ok) {
@@ -212,6 +219,8 @@ const handleSubmit = async () => {
         errorMessage = "Too many requests. Please wait a moment before trying again."
       } else if (err.message.includes('HTTP error! status: 400')) {
         errorMessage = "Invalid question format. Please try rephrasing your question."
+      } else if (err.message.includes('HTTP error! status: 403')) {
+        errorMessage = "Security verification failed. Please complete the verification and try again."
       }
     }
 

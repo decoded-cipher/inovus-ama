@@ -13,7 +13,20 @@
 
     <!-- Input -->
     <div class="bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl border border-slate-200/60 p-2.5 sm:p-3 shadow-sm">
-      <form @submit.prevent="$emit('submit')" class="flex items-center space-x-2 sm:space-x-3">
+      
+      <!-- Turnstile Widget -->
+      <div v-if="isRequired" class="absolute -z-10">
+        <TurnstileWidget
+          ref="turnstileWidget"
+          theme="light"
+          size="compact"
+          @verified="handleTurnstileVerified"
+          @error="handleTurnstileError"
+          @expired="handleTurnstileExpired"
+        />
+      </div>
+      
+      <form @submit.prevent="handleSubmit" class="flex items-center space-x-2 sm:space-x-3">
         <input
           :value="input"
           :disabled="isLoading || isOffline"
@@ -26,15 +39,25 @@
         />
         <button
           type="submit"
-          :disabled="!input.trim() || isLoading || isOffline"
+          :disabled="!input.trim() || isLoading || isOffline || (isRequired && !isVerified)"
           :class="[
             'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-3 py-2 rounded transition-all duration-200 flex-shrink-0 shadow-lg shadow-blue-500/25',
-            (isLoading || isOffline || !input.trim()) && 'opacity-50 cursor-not-allowed'
+            (isLoading || isOffline || !input.trim() || (isRequired && !isVerified)) && 'opacity-50 cursor-not-allowed'
           ]"
         >
           <Icon name="lucide:send" class="w-3 h-3 sm:w-4 sm:h-4" />
         </button>
       </form>
+      
+      <!-- Turnstile Error -->
+      <div v-if="hasError" class="mt-2 p-2 bg-red-50 border border-red-200 rounded">
+        <div class="flex items-center space-x-2">
+          <Icon name="lucide:shield-alert" class="w-4 h-4 text-red-600" />
+          <span class="text-sm text-red-700">
+            {{ error }}
+          </span>
+        </div>
+      </div>
       
       <!-- Offline Notice -->
       <div v-if="isOffline" class="mt-2 p-2 bg-red-50 border border-red-200 rounded">
@@ -51,6 +74,7 @@
 
 <script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
+import { useTurnstile } from '~/composables/useTurnstile'
 
 interface Message {
   id: string
@@ -70,10 +94,24 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:input': [value: string]
-  'submit': []
+  'submit': [turnstileToken?: string]
 }>()
 
 const messagesContainer = ref<HTMLElement>()
+const turnstileWidget = ref()
+
+const {
+  isVerified,
+  hasError,
+  isRequired,
+  token,
+  error,
+  setVerified,
+  setError,
+  setRequired,
+  reset,
+  expire
+} = useTurnstile()
 
 // Auto-scroll to bottom when new messages are added
 watch(() => props.messages, () => {
@@ -83,4 +121,42 @@ watch(() => props.messages, () => {
     }
   })
 }, { deep: true })
+
+// Show Turnstile for first 3 interactions or randomly for security
+watch(() => props.messages.length, (newLength) => {
+  if (newLength <= 6) { // First 3 conversations (user + assistant = 2 messages each)
+    setRequired(true)
+  } else {
+    // Show randomly for additional security (20% chance)
+    setRequired(Math.random() < 0.2)
+  }
+})
+
+const handleTurnstileVerified = (tokenValue: string) => {
+  setVerified(tokenValue)
+}
+
+const handleTurnstileError = (errorMessage: string) => {
+  console.error('Turnstile error:', errorMessage)
+  setError('Security verification failed. Please try again.')
+}
+
+const handleTurnstileExpired = () => {
+  expire()
+}
+
+const handleSubmit = () => {
+  if (isRequired.value && !isVerified.value) {
+    setError('Please complete the security verification.')
+    return
+  }
+  
+  emit('submit', token.value)
+  
+  // Reset Turnstile after successful submission
+  if (turnstileWidget.value) {
+    turnstileWidget.value.reset()
+  }
+  reset()
+}
 </script>

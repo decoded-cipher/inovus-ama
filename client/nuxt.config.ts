@@ -8,6 +8,7 @@ export default defineNuxtConfig({
     "@nuxtjs/sitemap",
     "@nuxtjs/robots",
     "nuxt-icon",
+    "@nuxtjs/turnstile",
   ],
   css: ["~/assets/css/main.css"],
 
@@ -166,8 +167,17 @@ export default defineNuxtConfig({
 
   // Runtime config
   runtimeConfig: {
+    turnstileSecretKey: process.env.NUXT_TURNSTILE_SECRET_KEY,
     public: {
-      serverUrl: process.env.NUXT_PUBLIC_SERVER_URL
+      serverUrl: process.env.NUXT_PUBLIC_SERVER_URL,
+      turnstile: {
+        siteKey: process.env.NUXT_PUBLIC_TURNSTILE_SITE_KEY,
+      },
     }
+  },
+
+  // Turnstile configuration
+  turnstile: {
+    siteKey: process.env.NUXT_PUBLIC_TURNSTILE_SITE_KEY,
   },
 })

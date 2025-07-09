@@ -106,39 +106,27 @@ export async function generateFollowUpPrompt(
   conversationSummary: string,
   isFollowUp: boolean
 ): Promise<string> {
-  if (isFollowUp && conversationSummary) {
-    return `
+  const questionLabel = isFollowUp ? "Follow-up" : "Question"
+  
+  return `
 You are an assistant for Inovus Labs IEDC at Kristu Jyoti College (inovuslabs.org, @inovuslabs).
 
 Context: ${context}
 ${liveData ? `Live Data: ${liveData}\n` : ''}
-Previous Context: ${conversationSummary}
+${conversationSummary ? `${isFollowUp ? 'Previous Context' : 'History'}: ${conversationSummary}\n` : ''}
 
-Follow-up: ${question}
-
-RULES:
-- Only answer Inovus Labs IEDC questions
-- Off-topic → Mention that you can only answer Inovus Labs IEDC questions
-- No info → Mention that you don't have that information and suggest checking the website or socials
-- Build on previous conversation naturally
-    `.trim()
-  } else {
-    return `
-You are an assistant for Inovus Labs IEDC at Kristu Jyoti College (inovuslabs.org, @inovuslabs).
-
-Context: ${context}
-${liveData ? `Live Data: ${liveData}\n` : ''}
-${conversationSummary ? `History: ${conversationSummary}\n` : ''}
-
-Question: ${question}
+${questionLabel}: ${question}
 
 RULES:
 - Only answer Inovus Labs IEDC questions
-- Topics: programs, events, startups, innovation, entrepreneurship, workshops, mentorship, funding
+${!isFollowUp ? '- Topics: programs, events, startups, innovation, entrepreneurship, workshops, mentorship, funding\n' : ''}
 - Off-topic → Mention that you can only answer Inovus Labs IEDC questions
 - No info → Mention that you don't have that information and suggest checking the website or socials
+${isFollowUp ? '- Build on previous conversation naturally\n' : ''}
+${!isFollowUp ? '- Provide actionable next steps if applicable\n' : ''}
+- Get result as proper HTML with appropriate tags. Use semantic HTML structure. No markdown formatting.
+- Use a friendly, helpful tone
 `.trim()
-  }
 }
 
 

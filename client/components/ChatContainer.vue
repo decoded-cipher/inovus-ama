@@ -24,7 +24,7 @@
         <button
           type="submit"
           :disabled="!input.trim() || isLoading"
-          class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 shadow-lg shadow-blue-500/25 disabled:opacity-50"
+          class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-3 py-2 rounded transition-all duration-200 flex-shrink-0 shadow-lg shadow-blue-500/25 disabled:opacity-50"
         >
           <Icon name="lucide:send" class="w-3 h-3 sm:w-4 sm:h-4" />
         </button>

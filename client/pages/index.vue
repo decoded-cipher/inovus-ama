@@ -109,15 +109,16 @@ const handleQuestionClick = (question: string) => {
 const config = useRuntimeConfig()
 
 const handleSubmit = async () => {
-  if (!canAskToday()) {
-    messages.value.push({
-      id: Date.now().toString(),
-      role: 'assistant',
-      content: "You've reached your daily question limit. Try again tomorrow!",
-      timestamp: new Date(),
-    });
-    return;
-  }
+  
+  // if (!canAskToday()) {
+  //   messages.value.push({
+  //     id: Date.now().toString(),
+  //     role: 'assistant',
+  //     content: "You've reached your daily question limit. Try again tomorrow!",
+  //     timestamp: new Date(),
+  //   });
+  //   return;
+  // }
 
   if (!input.value.trim() || isLoading.value) return;
 

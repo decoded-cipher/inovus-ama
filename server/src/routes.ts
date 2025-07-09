@@ -53,7 +53,7 @@ router.post('/ask', async (c) => {
     const answer = await askGemini(question, contextChunks, liveData, validatedHistory, c.env.GEMINI_API_KEY)
     const references = matches.map(m => m.metadata)
 
-    console.log(`\n\n--- Answer generated successfully.`)
+    console.log(`\n\n--- Answer generated successfully.\n`);
     // console.log(`\n\n${answer}`);
     
     
@@ -101,7 +101,7 @@ router.post('/upload', async (c) => {
     const metadata = parseMetadata(body['metadata'])
 
     // Upload file to R2 storage
-    const fileKey = await uploadToR2(file)
+    const fileKey = await uploadToR2(file, c.env.R2_BUCKET_URL)
     const fileUrl = `${c.env.R2_PUBLIC_DOMAIN}/${fileKey}`
 
     // Process file and extract text content
@@ -109,7 +109,7 @@ router.post('/upload', async (c) => {
     
     // Handle processing errors
     if (processingResult.error) {
-      console.warn(`File processing warning for ${file.name}:`, processingResult.error)
+      console.warn(`--- File processing warning for ${file.name}:`, processingResult.error)
     }
 
     let vectorizationResult = null

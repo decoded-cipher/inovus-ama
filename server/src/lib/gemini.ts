@@ -34,7 +34,7 @@ function getGeminiClient(apiKey: string) {
  */
 
 export async function getEmbedding(text: string, apiKey: string): Promise<number[]> {
-  console.log(`\n--- Generating embedding for text: "${text.slice(0, 50)}..."`);
+  console.log(`\n\n--- Generating embedding for text: "${text.slice(0, 50)}..."`);
   
   const { embedModel } = getGeminiClient(apiKey)
   const result = await embedModel.embedContent({ content: { parts: [{ text }] } })
@@ -136,7 +136,7 @@ ${!isFollowUp ? '- Topics: programs, events, startups, innovation, entrepreneurs
 - No info → Mention that you don't have that information and suggest checking the website or socials
 ${isFollowUp ? '- Build on previous conversation naturally\n' : ''}
 ${!isFollowUp ? '- Provide actionable next steps if applicable\n' : ''}
-- Get result as proper HTML with appropriate tags. Use semantic HTML structure. No markdown formatting.
+- Get result as proper HTML with appropriate tags. Use semantic HTML structure (body). No markdown formatting. No CSS styles.
 - Use a friendly, helpful tone
 `.trim()
 }

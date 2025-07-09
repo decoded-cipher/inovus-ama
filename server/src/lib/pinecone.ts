@@ -57,6 +57,8 @@ export async function searchVectorizeDB(queryVector: number[], env: any = env): 
  */
 
 export async function insertVector(embedding: number[], content: string, metadata: any = {}, env: any = env): Promise<void> {
+  console.log(`--- Inserting vector with content: "${content.slice(0, 50)}..."`)
+  
   await fetch(`${env.PINECONE_ENV}/vectors/upsert`, {
     method: 'POST',
     headers: {

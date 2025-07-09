@@ -101,7 +101,7 @@ router.post('/upload', async (c) => {
     const metadata = parseMetadata(body['metadata'])
 
     // Upload file to R2 storage
-    const fileKey = await uploadToR2(file, c.env.R2_BUCKET_URL)
+    const fileKey = await uploadToR2(file, c.env)
     const fileUrl = `${c.env.R2_PUBLIC_DOMAIN}/${fileKey}`
 
     // Process file and extract text content

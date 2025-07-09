@@ -1,13 +1,5 @@
 
-import { env } from 'hono/adapter'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-
-const GEMINI_API_KEY = env.GEMINI_API_KEY || 'AIzaSyDQzu-HUDuOgwFsDa1A3iElwqn0zBDihNI'
-
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
-const model = genAI.getGenerativeModel({ model: 'models/gemini-2.5-flash' })
-const embedModel = genAI.getGenerativeModel({ model: 'models/embedding-001' })
-
 
 
 interface ConversationMessage {
@@ -19,22 +11,40 @@ interface ConversationMessage {
 
 
 /**
+ * Initializes the Gemini client with the provided API key.
+ * @param apiKey - The Gemini API key
+ * @returns An object containing the generative model and embedding model
+ */
+
+function getGeminiClient(apiKey: string) {
+  const genAI = new GoogleGenerativeAI(apiKey)
+  return {
+    model: genAI.getGenerativeModel({ model: 'models/gemini-2.5-flash' }),
+    embedModel: genAI.getGenerativeModel({ model: 'models/embedding-001' })
+  }
+}
+
+
+
+/**
  * Generates an embedding for the given text using Gemini's embedding model.
  * @param text - The text to embed
+ * @param apiKey - The Gemini API key
  * @returns A promise that resolves to the embedding vector
  */
 
-export async function getEmbedding(text: string): Promise<number[]> {
-  console.log(`Generating embedding for text: "${text.slice(0, 50)}..."`);
+export async function getEmbedding(text: string, apiKey: string): Promise<number[]> {
+  console.log(`\n--- Generating embedding for text: "${text.slice(0, 50)}..."`);
   
+  const { embedModel } = getGeminiClient(apiKey)
   const result = await embedModel.embedContent({ content: { parts: [{ text }] } })
   if (!result.embedding || !result.embedding.values) {
-    throw new Error('Failed to generate embedding')
+    throw new Error('--- Failed to generate embedding')
   }
 
-  console.log(`Generated embedding of length: ${result.embedding.values.length}`);
+  console.log(`--- Generated embedding of length: ${result.embedding.values.length}`);
   if (result.embedding.values.length === 0) {
-    throw new Error('Embedding is empty')
+    throw new Error('--- Embedding is empty')
   }
   
   return result.embedding.values
@@ -45,10 +55,11 @@ export async function getEmbedding(text: string): Promise<number[]> {
 /**
  * Summarizes a conversation history into a concise summary.
  * @param messages - Array of conversation messages
+ * @param apiKey - The Gemini API key
  * @returns A promise that resolves to the summary text
  */
 
-export async function summarizeConversation(messages: ConversationMessage[]): Promise<string> {
+export async function summarizeConversation(messages: ConversationMessage[], apiKey: string): Promise<string> {
   if (messages.length === 0) return ''
   
   const conversationText = messages
@@ -63,6 +74,7 @@ export async function summarizeConversation(messages: ConversationMessage[]): Pr
     Summary:
   `.trim()
 
+  const { model } = getGeminiClient(apiKey)
   const result = await model.generateContent({ contents: [{ parts: [{ text: prompt }] }] })
   return result.response.text()
 }
@@ -137,6 +149,7 @@ ${!isFollowUp ? '- Provide actionable next steps if applicable\n' : ''}
  * @param chunks - Static context chunks to include
  * @param liveData - Any live data relevant to the question
  * @param conversationHistory - Previous conversation messages
+ * @param apiKey - The Gemini API key
  * @returns A promise that resolves to the assistant's response
  */
 
@@ -144,7 +157,8 @@ export async function askGemini(
   question: string, 
   chunks: string[], 
   liveData: string, 
-  conversationHistory: ConversationMessage[] = []
+  conversationHistory: ConversationMessage[] = [],
+  apiKey: string
 ): Promise<string> {
   const context = chunks.length
     ? chunks.join('\n---\n')
@@ -158,7 +172,7 @@ export async function askGemini(
     const recentMessages = conversationHistory.slice(-4)
     
     if (messagesToSummarize.length > 0) {
-      conversationSummary = await summarizeConversation(messagesToSummarize)
+      conversationSummary = await summarizeConversation(messagesToSummarize, apiKey)
     }
     
     const recentConversation = recentMessages
@@ -185,8 +199,10 @@ export async function askGemini(
     isFollowUp
   )
 
-  console.log(`\nGenerated prompt for Gemini:\n\n${prompt}\n`)
+  console.log(`--- Generated prompt for Gemini.`)
+  // console.log(`\n\n${prompt}\n\n`)
 
+  const { model } = getGeminiClient(apiKey)
   const result = await model.generateContent({ contents: [{ parts: [{ text: prompt }] }] })
   return result.response.text()
 }
@@ -197,12 +213,14 @@ export async function askGemini(
  * Generates follow-up suggestions based on the last assistant message and conversation context.
  * @param lastAssistantMessage - The last message from the assistant
  * @param conversationContext - The context of the conversation
+ * @param apiKey - The Gemini API key
  * @returns A promise that resolves to an array of follow-up questions
  */
 
 export async function generateFollowUpSuggestions(
   lastAssistantMessage: string,
-  conversationContext: string
+  conversationContext: string,
+  apiKey: string
 ): Promise<string[]> {
   const prompt = `
 Based on this assistant response and conversation context, generate 3 relevant follow-up questions that a user might want to ask next. Make them specific and actionable.
@@ -215,6 +233,7 @@ Generate exactly 1 follow-up questions, one per line, without numbering or bulle
 `.trim()
 
   try {
+    const { model } = getGeminiClient(apiKey)
     const result = await model.generateContent({ contents: [{ parts: [{ text: prompt }] }] })
     const suggestions = result.response.text()
       .split('\n')

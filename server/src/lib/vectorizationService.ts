@@ -19,7 +19,8 @@ export interface VectorizationResult {
 
 export async function vectorizeFileChunks(
   chunks: string[], 
-  options: VectorizationOptions
+  options: VectorizationOptions,
+  env: any = env
 ): Promise<VectorizationResult> {
   const { 
     fileKey, 
@@ -47,7 +48,7 @@ export async function vectorizeFileChunks(
     }
     
     try {
-      const embedding = await getEmbedding(chunk)
+      const embedding = await getEmbedding(chunk, env.GEMINI_API_KEY)
       const chunkMetadata = {
         filename: fileName,
         fileType: fileType,
@@ -59,7 +60,7 @@ export async function vectorizeFileChunks(
         ...metadata
       }
       
-      await insertVector(embedding, `${fileKey}_chunk_${i}`, chunkMetadata)
+      await insertVector(embedding, `${fileKey}_chunk_${i}`, chunkMetadata, env)
       result.chunksProcessed++
     } catch (vectorError) {
       const errorMsg = `Failed to vectorize chunk ${i}: ${(vectorError as Error).message}`

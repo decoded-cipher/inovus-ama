@@ -5,7 +5,7 @@ const router = new Hono();
 import { uploadToR2 } from './lib/r2'
 import { getLiveMCPData } from './lib/mcp'
 import { isInovusQuestion, needsLiveData } from './lib/guardrails'
-import { searchVectorizeDB, insertVector } from './lib/pinecone'
+import { searchVectorizeDB } from './lib/pinecone'
 import { getEmbedding, askGemini, generateFollowUpSuggestions } from './lib/gemini'
 import { processFile, parseMetadata } from './lib/fileProcessor'
 import { vectorizeFileChunks } from './lib/vectorizationService'
@@ -37,21 +37,26 @@ router.post('/ask', async (c) => {
       : []
 
     // Guardrail: ensure question is about Inovus Labs
-    // const relevant = await isInovusQuestion(question)
+    // const relevant = await isInovusQuestion(question, c.env)
     // if (!relevant) {
     //   return c.json({ answer: "Sorry, I can only answer questions about Inovus Labs." })
     // }
 
-    const embedding = await getEmbedding(question)
-    const matches = await searchVectorizeDB(embedding)
+    const embedding = await getEmbedding(question, c.env.GEMINI_API_KEY)
+    const matches = await searchVectorizeDB(embedding, c.env)
     const contextChunks = matches.map(m => m.content)
     
     // const requireLiveData = await needsLiveData(question)
     // const liveData = requireLiveData ? await getLiveMCPData() : ''
     const liveData = ''
 
-    const answer = await askGemini(question, contextChunks, liveData, validatedHistory)
+    const answer = await askGemini(question, contextChunks, liveData, validatedHistory, c.env.GEMINI_API_KEY)
     const references = matches.map(m => m.metadata)
+
+    console.log(`\n\n--- Answer generated successfully.`)
+    // console.log(`\n\n${answer}`);
+    
+    
     
     // Generate follow-up suggestions if there's conversation history
     // let followUpSuggestions: string[] = []
@@ -97,7 +102,7 @@ router.post('/upload', async (c) => {
 
     // Upload file to R2 storage
     const fileKey = await uploadToR2(file)
-    const fileUrl = `https://pub-dbf744bbd34f4c819d82cdae83b7fe37.r2.dev/${fileKey}`
+    const fileUrl = `${c.env.R2_PUBLIC_DOMAIN}/${fileKey}`
 
     // Process file and extract text content
     const processingResult = await processFile(file, 1000)
@@ -118,7 +123,7 @@ router.post('/upload', async (c) => {
         fileSize: file.size,
         fileUrl,
         metadata
-      })
+      }, c.env)
     }
 
     // Prepare response

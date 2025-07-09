@@ -24,30 +24,31 @@ const LIVE_DATA_CONFIG = {
 /**
  * Checks if the question is relevant to Inovus Labs using semantic similarity
  * @param question - The user's question to evaluate
+ * @param env - The environment containing the API key
  * @returns Promise<boolean> - True if relevant, false otherwise
  */
-export async function isInovusQuestion(question: string): Promise<boolean> {
+export async function isInovusQuestion(question: string, env: any): Promise<boolean> {
   if (!question?.trim()) {
-    console.log('Empty question provided');
+    console.log('--- Empty question provided');
     return false;
   }
 
   try {
-    console.log(`Checking relevance for: "${question}"`);
+    console.log(`--- Checking relevance for: "${question}"`);
     
-    const embedding = await getEmbedding(question);
+    const embedding = await getEmbedding(question, env.GEMINI_API_KEY);
     const matches = await searchVectorizeDB(embedding, {
       topK: RELEVANCE_CONFIG.MAX_RESULTS,
       minScore: RELEVANCE_CONFIG.MIN_SIMILARITY_THRESHOLD
-    });
+    }, env);
 
     const isRelevant = matches.length >= RELEVANCE_CONFIG.MIN_MATCHES_FOR_RELEVANCE;
-    
-    console.log(`Relevance check result: ${isRelevant} (${matches.length} matches found)`);
+
+    console.log(`--- Relevance check result: ${isRelevant} (${matches.length} matches found)`);
     return isRelevant;
     
   } catch (error) {
-    console.error('Error checking question relevance:', error);
+    console.error('--- Error checking question relevance:', error);
     // Fail open - assume relevant if we can't check
     return true;
   }
@@ -91,9 +92,9 @@ export async function needsLiveData(question: string): Promise<boolean> {
   }
   
   const needsLive = score >= LIVE_DATA_CONFIG.THRESHOLD_SCORE;
-  
-  console.log(`Live data check: "${question}" | Score: ${score.toFixed(2)} | Keywords: [${matchedKeywords.join(', ')}] | Needs live: ${needsLive}`);
-  
+
+  console.log(`--- Live data check: "${question}" | Score: ${score.toFixed(2)} | Keywords: [${matchedKeywords.join(', ')}] | Needs live: ${needsLive}`);
+
   return needsLive;
 }
 

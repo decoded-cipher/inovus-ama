@@ -7,9 +7,6 @@ export interface VectorMatch {
   metadata: any
 }
 
-const PINECONE_ENVIRONMENT = env.PINECONE_ENVIRONMENT || 'https://inovus-ama-nhrc3r1.svc.aped-4627-b74a.pinecone.io'
-const PINECONE_API_KEY = env.PINECONE_API_KEY || 'pcsk_2tSPGi_CWZZ1UJ5CDEMcmib1mzrGmxH8Tvkamxtq9dx2gVMh9EK2591en5qP8n1HPHJwfV'
-
 
 
 /**
@@ -20,14 +17,14 @@ const PINECONE_API_KEY = env.PINECONE_API_KEY || 'pcsk_2tSPGi_CWZZ1UJ5CDEMcmib1m
  * @returns A promise that resolves to an array of VectorMatch objects
  */
 
-export async function searchVectorizeDB(queryVector: number[]): Promise<VectorMatch[]> {
-  console.log(`Searching Pinecone for vector: ${queryVector.slice(0, 5)}...`)
+export async function searchVectorizeDB(queryVector: number[], env: any = env): Promise<VectorMatch[]> {
+  console.log(`--- Searching Pinecone for vector: ${queryVector.slice(0, 5)}...`)
 
-  const response = await fetch(`${PINECONE_ENVIRONMENT}/query`, {
+  const response = await fetch(`${env.PINECONE_ENV}/query`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Api-Key': PINECONE_API_KEY,
+      'Api-Key': env.PINECONE_API_KEY,
     },
     body: JSON.stringify({
       vector: queryVector,
@@ -38,6 +35,9 @@ export async function searchVectorizeDB(queryVector: number[]): Promise<VectorMa
 
   if (!response.ok) return []
   const results = await response.json()
+
+  console.log(`--- Found ${results.matches?.length || 0} matches for vector.`);
+
   return (results.matches || []).map((m: any) => ({
     id: m.id,
     content: m.metadata?.content || '',
@@ -56,12 +56,12 @@ export async function searchVectorizeDB(queryVector: number[]): Promise<VectorMa
  * @param metadata - Additional metadata to store with the vector
  */
 
-export async function insertVector(embedding: number[], content: string, metadata: any): Promise<void> {
-  await fetch(`${PINECONE_ENVIRONMENT}/vectors/upsert`, {
+export async function insertVector(embedding: number[], content: string, metadata: any = {}, env: any = env): Promise<void> {
+  await fetch(`${env.PINECONE_ENV}/vectors/upsert`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Api-Key': PINECONE_API_KEY,
+      'Api-Key': env.PINECONE_API_KEY,
     },
     body: JSON.stringify({
       vectors: [

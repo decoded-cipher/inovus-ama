@@ -16,16 +16,16 @@
       <div class="flex items-center space-x-3 sm:space-x-6">
         <!-- Desktop Navigation -->
         <nav class="hidden lg:flex items-center space-x-6">
-          <NuxtLink to="#" class="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+          <button class="text-sm text-slate-600 hover:text-slate-900 transition-colors" @click="openLink('https://blog.inovuslabs.org')">
             Blog
-          </NuxtLink>
-          <NuxtLink to="#" class="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+          </button>
+          <button class="text-sm text-slate-600 hover:text-slate-900 transition-colors" @click="openLink('https://inovuslabs.org/inora')">
             Podcast
-          </NuxtLink>
-          <NuxtLink to="#" class="text-sm text-slate-600 hover:text-slate-900 transition-colors">
+          </button>
+          <button class="text-sm text-slate-600 hover:text-slate-900 transition-colors" @click="openLink('https://github.com/inovus-labs')">
             Projects
-          </NuxtLink>
-          <button class="text-sm border border-slate-200 hover:border-blue-300 hover:bg-blue-50 text-slate-700 hover:text-blue-700 transition-all px-3 py-1.5 rounded-md flex items-center space-x-1">
+          </button>
+          <button class="text-sm border border-slate-200 hover:border-blue-300 hover:bg-blue-50 text-slate-700 hover:text-blue-700 transition-all px-3 py-1.5 rounded flex items-center space-x-1" @click="openLink('https://inovuslabs.org')">
             <span>Inovus Labs</span>
             <Icon name="lucide:arrow-up-right" class="w-3 h-3" />
           </button>
@@ -55,4 +55,7 @@
 defineEmits<{
   'toggle-sidebar': []
 }>()
+const openLink = (url: string) => {
+  window.open(`${url}?utm_source=ama.inovuslabs.org`, '_blank');
+}
 </script>

@@ -33,9 +33,34 @@
 
         <!-- Status and Mobile Menu -->
         <div class="flex items-center space-x-3">
-          <div class="flex items-center space-x-2 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200/60 rounded-full px-2 sm:px-3 py-1">
-            <div class="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-            <span class="text-xs text-emerald-700 font-medium">Online</span>
+          
+          <div 
+            :class="[
+              'flex items-center space-x-2 rounded-full px-2 sm:px-3 py-1 transition-all duration-300',
+              status.isOnline 
+                ? 'bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200/60'
+                : 'bg-gradient-to-r from-red-50 to-rose-50 border border-red-200/60'
+            ]"
+          >
+            <div 
+              :class="[
+                'w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full',
+                status.isOnline 
+                  ? 'bg-emerald-500 animate-pulse'
+                  : 'bg-red-500',
+                status.isChecking && 'animate-spin'
+              ]"
+            ></div>
+            <span 
+              :class="[
+                'text-xs font-medium',
+                status.isOnline 
+                  ? 'text-emerald-700'
+                  : 'text-red-700'
+              ]"
+            >
+              {{ status.isOnline ? 'Online' : 'Offline' }}
+            </span>
           </div>
 
           <!-- Mobile Menu Button -->
@@ -52,9 +77,14 @@
 </template>
 
 <script setup lang="ts">
+import { useHealthCheck } from '~/composables/useHealthCheck'
+
+const { status } = useHealthCheck()
+
 defineEmits<{
   'toggle-sidebar': []
 }>()
+
 const openLink = (url: string) => {
   window.open(`${url}?utm_source=ama.inovuslabs.org`, '_blank');
 }

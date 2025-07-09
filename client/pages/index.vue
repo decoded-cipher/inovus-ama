@@ -20,6 +20,7 @@
         :show="showSidebar"
         :suggested-questions="suggestedQuestions"
         :is-loading="isLoading"
+        :is-offline="!healthStatus.isOnline"
         @question-click="handleQuestionClick"
         @clear-conversation="clearConversation"
       />
@@ -40,6 +41,7 @@
           :messages="messages"
           :is-loading="isLoading"
           :input="input"
+          :is-offline="!healthStatus.isOnline"
           @update:input="input = $event"
           @submit="handleSubmit"
         />
@@ -53,6 +55,9 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { canAskToday } from '~/composables/useRateLimit'
+import { useHealthCheck } from '~/composables/useHealthCheck'
+
+const { status: healthStatus } = useHealthCheck()
 
 interface Message {
   id: string
@@ -102,11 +107,26 @@ const closeSidebar = () => {
 }
 
 const handleQuestionClick = (question: string) => {
+  // Don't allow question selection when offline
+  if (!healthStatus.value.isOnline) {
+    return
+  }
+  
   input.value = question
   closeSidebar()
 }
 
 const handleSubmit = async () => {
+  // Don't allow submission when offline
+  if (!healthStatus.value.isOnline) {
+    messages.value.push({
+      id: Date.now().toString(),
+      role: 'assistant',
+      content: "I'm currently offline. Please wait for the connection to be restored.",
+      timestamp: new Date(),
+    });
+    return;
+  }
   
   // if (!canAskToday()) {
   //   messages.value.push({

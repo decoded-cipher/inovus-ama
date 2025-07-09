@@ -44,12 +44,26 @@
       <!-- Suggested Questions -->
       <div>
         <h3 class="text-sm font-semibold text-slate-900 mb-3">Popular Questions</h3>
+        
+        <!-- Offline Notice -->
+        <div v-if="isOffline" class="mb-3 p-3 bg-red-50 border border-red-200 rounded">
+          <div class="flex items-center space-x-2">
+            <Icon name="lucide:wifi-off" class="w-4 h-4 text-red-600" />
+            <span class="text-xs text-red-700">
+              Service offline - Questions disabled
+            </span>
+          </div>
+        </div>
+        
         <div class="space-y-2">
           <button
             v-for="(question, index) in suggestedQuestions"
             :key="index"
-            :disabled="isLoading"
-            class="w-full text-left p-3 text-xs sm:text-sm text-slate-600 hover:text-slate-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-100/60"
+            :disabled="isLoading || isOffline"
+            :class="[
+              'w-full text-left p-3 text-xs sm:text-sm text-slate-600 hover:text-slate-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-100/60',
+              (isLoading || isOffline) && 'opacity-50 cursor-not-allowed'
+            ]"
             @click="$emit('question-click', question)"
           >
             {{ question }}
@@ -60,8 +74,11 @@
       <!-- Clear Conversation Button -->
       <div class="mt-6 pt-4 border-t border-slate-200/60">
         <button
-          :disabled="isLoading"
-          class="w-full p-3 text-xs sm:text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition-all duration-200 border border-slate-200/60 hover:border-slate-300/60 flex items-center justify-center gap-2"
+          :disabled="isLoading || isOffline"
+          :class="[
+            'w-full p-3 text-xs sm:text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition-all duration-200 border border-slate-200/60 hover:border-slate-300/60 flex items-center justify-center gap-2',
+            (isLoading || isOffline) && 'opacity-50 cursor-not-allowed'
+          ]"
           @click="$emit('clear-conversation')"
         >
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,6 +96,7 @@ interface Props {
   show: boolean
   suggestedQuestions: string[]
   isLoading: boolean
+  isOffline?: boolean
 }
 
 defineProps<Props>()

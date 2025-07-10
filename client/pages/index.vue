@@ -1,5 +1,5 @@
 <template>
-  <div class="h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 flex flex-col overflow-hidden">
+  <div :style="{ minHeight: 'calc(var(--vh, 1vh) * 100)' }" class="bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 flex flex-col overflow-hidden">
     <!-- Header -->
     <AppHeader 
       :show-sidebar="showSidebar"
@@ -53,7 +53,7 @@
 
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { canAskToday } from '~/composables/useRateLimit'
 import { useHealthCheck } from '~/composables/useHealthCheck'
 
@@ -248,6 +248,17 @@ const clearConversation = () => {
   closeSidebar()
 }
 
+// Fix for mobile 100vh issue
+const setVh = () => {
+  document.documentElement.style.setProperty('--vh', `${window.innerHeight * 0.01}px`)
+}
+onMounted(() => {
+  setVh()
+  window.addEventListener('resize', setVh)
+})
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', setVh)
+})
 
 // SEO
 // SEO Meta

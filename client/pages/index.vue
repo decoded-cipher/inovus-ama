@@ -1,5 +1,12 @@
 <template>
   <div :style="{ minHeight: 'calc(var(--vh, 1vh) * 100)' }" class="bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 flex flex-col overflow-hidden">
+    <!-- Disclaimer Modal -->
+    <DisclaimerModal 
+      :show="showDisclaimer"
+      @accept="handleDisclaimerAccept"
+      @decline="handleDisclaimerDecline"
+    />
+
     <!-- Header -->
     <AppHeader 
       :show-sidebar="showSidebar"
@@ -44,6 +51,7 @@
           :is-offline="!healthStatus.isOnline"
           @update:input="input = $event"
           @submit="handleSubmit"
+          @feedback="handleFeedback"
         />
       </div>
     </div>
@@ -56,6 +64,7 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { canAskToday } from '~/composables/useRateLimit'
 import { useHealthCheck } from '~/composables/useHealthCheck'
+import DisclaimerModal from '~/components/DisclaimerModal.vue'
 
 const { status: healthStatus } = useHealthCheck()
 
@@ -80,6 +89,15 @@ const input = ref('')
 const isLoading = ref(false)
 const showSidebar = ref(false)
 const dynamicSuggestions = ref<string[]>([])
+const showDisclaimer = ref(false)
+
+// Check if user has already accepted disclaimer
+onMounted(() => {
+  const hasAcceptedDisclaimer = sessionStorage.getItem('inobot-disclaimer-accepted')
+  if (!hasAcceptedDisclaimer) {
+    showDisclaimer.value = true
+  }
+})
 
 const suggestedQuestions = computed(() => {
   const base = [
@@ -106,9 +124,20 @@ const closeSidebar = () => {
   showSidebar.value = false
 }
 
+const handleDisclaimerAccept = () => {
+  sessionStorage.setItem('inobot-disclaimer-accepted', 'true')
+  sessionStorage.setItem('inobot-session-start', new Date().toISOString())
+  showDisclaimer.value = false
+}
+
+const handleDisclaimerDecline = () => {
+  // Redirect to Inovus Labs main site if user declines
+  window.location.href = 'https://inovuslabs.org'
+}
+
 const handleQuestionClick = (question: string) => {
-  // Don't allow question selection when offline
-  if (!healthStatus.value.isOnline) {
+  // Don't allow question selection when offline or disclaimer not accepted
+  if (!healthStatus.value.isOnline || showDisclaimer.value) {
     return
   }
   
@@ -116,9 +145,31 @@ const handleQuestionClick = (question: string) => {
   closeSidebar()
 }
 
+const handleFeedback = (messageId: string, type: 'like' | 'dislike') => {
+  console.log(`Feedback for message ${messageId}: ${type}`)
+  
+  // Store feedback data in session storage for analysis
+  const feedbackData = {
+    messageId,
+    type,
+    timestamp: new Date().toISOString(),
+    sessionId: sessionStorage.getItem('inobot-session-start')
+  }
+  
+  // Get existing feedback array or create new one
+  const existingFeedback = JSON.parse(sessionStorage.getItem('inobot-feedback') || '[]')
+  existingFeedback.push(feedbackData)
+  sessionStorage.setItem('inobot-feedback', JSON.stringify(existingFeedback))
+}
+
 const handleSubmit = async (turnstileToken?: string) => {
-  // Don't allow submission when offline
-  if (!healthStatus.value.isOnline) {
+  // Don't allow submission when offline or disclaimer not accepted
+  if (!healthStatus.value.isOnline || showDisclaimer.value) {
+    if (showDisclaimer.value) {
+      // Show disclaimer modal again if user tries to submit without accepting
+      return
+    }
+    
     messages.value.push({
       id: Date.now().toString(),
       role: 'assistant',
@@ -127,20 +178,21 @@ const handleSubmit = async (turnstileToken?: string) => {
     });
     return;
   }
-  
-  // if (!canAskToday()) {
-  //   messages.value.push({
-  //     id: Date.now().toString(),
-  //     role: 'assistant',
-  //     content: "You've reached your daily question limit. Try again tomorrow!",
-  //     timestamp: new Date(),
-  //   });
-  //   return;
-  // }
 
   if (!input.value.trim() || isLoading.value) return;
 
   const question = input.value.trim()
+
+  // Store question data for analysis
+  const questionData = {
+    question,
+    timestamp: new Date().toISOString(),
+    sessionId: sessionStorage.getItem('inobot-session-start')
+  }
+  
+  const existingQuestions = JSON.parse(sessionStorage.getItem('inobot-questions') || '[]')
+  existingQuestions.push(questionData)
+  sessionStorage.setItem('inobot-questions', JSON.stringify(existingQuestions))
 
   messages.value.push({
     id: Date.now().toString(),
@@ -199,6 +251,18 @@ const handleSubmit = async (turnstileToken?: string) => {
     }
 
     messages.value.push(assistantMessage);
+
+    // Store response data for analysis
+    const responseData = {
+      questionId: Date.now().toString(),
+      response: assistantMessage.content,
+      timestamp: new Date().toISOString(),
+      sessionId: sessionStorage.getItem('inobot-session-start')
+    }
+    
+    const existingResponses = JSON.parse(sessionStorage.getItem('inobot-responses') || '[]')
+    existingResponses.push(responseData)
+    sessionStorage.setItem('inobot-responses', JSON.stringify(existingResponses))
 
     // Update dynamic suggestions if provided
     if (data.followUpSuggestions && Array.isArray(data.followUpSuggestions)) {
@@ -260,7 +324,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', setVh)
 })
 
-// SEO
 // SEO Meta
 useHead({
   title: 'InoBot - AI Assistant for Inovus Labs | Ask Anything About Our Programs',

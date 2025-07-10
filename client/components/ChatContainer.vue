@@ -6,6 +6,7 @@
         v-for="message in messages"
         :key="message.id"
         :message="message"
+        @feedback="handleFeedback"
       />
 
       <ChatLoadingMessage v-if="isLoading" />
@@ -15,16 +16,16 @@
     <div class="bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl border border-slate-200/60 p-2.5 sm:p-3 shadow-sm">
       
       <!-- Turnstile Widget -->
-      <div v-if="isRequired" class="absolute -z-10">
-        <TurnstileWidget
-          ref="turnstileWidget"
-          theme="light"
-          size="compact"
-          @verified="handleTurnstileVerified"
-          @error="handleTurnstileError"
-          @expired="handleTurnstileExpired"
-        />
-      </div>
+      <TurnstileWidget
+        v-if="isRequired"
+        ref="turnstileWidget"
+        theme="light"
+        size="compact"
+        @verified="handleTurnstileVerified"
+        @error="handleTurnstileError"
+        @expired="handleTurnstileExpired"
+        class="absolute -z-10"
+      />
       
       <form @submit.prevent="handleSubmit" class="flex items-center space-x-2 sm:space-x-3">
         <input
@@ -95,6 +96,7 @@ const props = defineProps<Props>()
 const emit = defineEmits<{
   'update:input': [value: string]
   'submit': [turnstileToken?: string]
+  'feedback': [messageId: string, type: 'like' | 'dislike']
 }>()
 
 const messagesContainer = ref<HTMLElement>()
@@ -158,5 +160,9 @@ const handleSubmit = () => {
     turnstileWidget.value.reset()
   }
   reset()
+}
+
+const handleFeedback = (messageId: string, type: 'like' | 'dislike') => {
+  emit('feedback', messageId, type)
 }
 </script>

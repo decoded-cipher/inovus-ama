@@ -5,7 +5,7 @@
       'transition-transform duration-300 ease-in-out',
       'flex flex-col justify-center p-4 sm:p-6',
       show ? 'translate-x-0' : '-translate-x-full',
-      'lg:translate-x-0 lg:relative fixed left-0 top-0 bottom-0 z-50'
+      'lg:translate-x-0 lg:relative fixed left-0 top-0 bottom-0 z-40'
     ]"
   >
     <!-- Hero Content -->
@@ -87,6 +87,21 @@
           Clear Conversation
         </button>
       </div>
+
+      <!-- Version Display -->
+      <!-- <div class="mt-6 pt-4 border-t border-slate-200/60">
+        <div class="flex items-center justify-center">
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100/60 rounded-full px-4 py-2 flex items-center space-x-2">
+            <div class="w-2 h-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full animate-pulse"></div>
+            <span class="text-xs font-medium bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              InoBot v2.1.0
+            </span>
+            <Icon name="lucide:sparkles" class="w-3 h-3 text-blue-500" />
+          </div>
+        </div>
+        <p class="text-center text-xs text-slate-500 mt-2">Powered by Advanced AI</p>
+      </div> -->
+
     </div>
   </div>
 </template>

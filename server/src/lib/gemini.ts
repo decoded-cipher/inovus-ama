@@ -137,7 +137,7 @@ ${!isFollowUp ? '- Topics: programs, events, startups, innovation, entrepreneurs
 ${isFollowUp ? '- Build on previous conversation naturally\n' : ''}
 ${!isFollowUp ? '- Provide actionable next steps if applicable\n' : ''}
 - Get result as proper HTML with appropriate tags. Use semantic HTML structure (body). No markdown formatting. No CSS styles.
-- Use a friendly, helpful tone
+- Use a friendly, helpful tone. Use emojis where appropriate.
 `.trim()
 }
 

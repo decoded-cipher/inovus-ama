@@ -70,7 +70,11 @@ interface Message {
 const messages = ref<Message[]>([
   {
     id: '1',
-    content: "Hello! I'm InoBot, your intelligent assistant for everything Inovus Labs. I can help you learn about our programs, research initiatives, certification processes, and community opportunities. Feel free to ask follow-up questions to dive deeper into any topic. What would you like to explore today?",
+    content: `
+      <p>👋 Hello! I'm <strong>InoBot</strong>, your intelligent assistant from <strong>Inovus Labs</strong>.</p>
+      <p>I'm here to help you explore everything we do — from our programs and project initiatives to certifications, events, and community opportunities.</p>
+      <p>Got a question? Just ask! I'm always ready to assist you. 🤖✨</p>
+    `,
     role: 'assistant',
     timestamp: new Date(),
   },
@@ -84,8 +88,7 @@ const dynamicSuggestions = ref<string[]>([])
 const suggestedQuestions = computed(() => {
   const base = [
     "What is Inovus Labs' mission?",
-    "How can I get certified?",
-    "What research projects are active?",
+    "What projects are active now?",
     "How do I join the community?",
   ]
   
@@ -239,7 +242,11 @@ const clearConversation = () => {
   messages.value = [
     {
       id: '1',
-      content: "Hello! I'm InoBot, your intelligent assistant for everything Inovus Labs. I can help you learn about our programs, research initiatives, certification processes, and community opportunities. Feel free to ask follow-up questions to dive deeper into any topic. What would you like to explore today?",
+      content: `
+        <p>👋 Hello! I'm <strong>InoBot</strong>, your intelligent assistant from <strong>Inovus Labs</strong>.</p>
+        <p>I'm here to help you explore everything we do — from our programs and research initiatives to certifications, events, and community opportunities.</p>
+        <p>Got a question? Just ask! I'm always ready to assist you. 🤖✨</p>
+      `,
       role: 'assistant',
       timestamp: new Date(),
     },

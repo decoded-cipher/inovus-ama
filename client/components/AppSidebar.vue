@@ -16,7 +16,7 @@
         <span class="gradient-text">Inovus Labs</span>
       </h1>
       <p class="text-sm sm:text-base text-slate-600 mb-6 leading-relaxed">
-        Get instant, intelligent answers about our programs, research, certifications, and community from InoBot.
+        Get instant, intelligent answers about our events, initiatives, certifications, and community from InoBot.
       </p>
 
       <!-- Stats -->

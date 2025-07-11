@@ -30,7 +30,7 @@
         <input
           :value="input"
           :disabled="isLoading || isOffline"
-          :placeholder="isOffline ? 'Service is offline. Please wait...' : 'Ask InoBot anything about Inovus Labs...'"
+          :placeholder="isOffline ? 'Service is offline. Please wait...' : 'Ask me anything about Inovus Labs...'"
           :class="[
             'flex-1 border-0 bg-transparent focus:ring-2 focus:ring-blue-500/20 text-slate-900 placeholder:text-slate-500 text-sm outline-none',
             isOffline && 'cursor-not-allowed opacity-60'

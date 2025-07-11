@@ -125,12 +125,15 @@ watch(() => props.messages, () => {
 
 // Show Turnstile for first 3 interactions or randomly for security
 watch(() => props.messages.length, (newLength) => {
-  if (newLength <= 6) { // First 3 conversations (user + assistant = 2 messages each)
-    setRequired(true)
-  } else {
-    // Show randomly for additional security (20% chance)
-    setRequired(Math.random() < 0.2)
-  }
+  // if (newLength <= 6) { // First 3 conversations (user + assistant = 2 messages each)
+  //   setRequired(true)
+  // } else {
+  //   // Show randomly for additional security (20% chance)
+  //   setRequired(Math.random() < 0.2)
+  // }
+
+  // Show Turnstile for first 2 interactions
+  setRequired(newLength <= 2)
 })
 
 const handleTurnstileVerified = (tokenValue: string) => {

@@ -12,7 +12,7 @@
     </div>
 
     <!-- Input -->
-    <div class="bg-white/80 backdrop-blur-sm rounded-lg sm:rounded-xl border border-slate-200/60 p-2.5 sm:p-3 shadow-sm">
+    <div class="bg-white/80 backdrop-blur-sm rounded sm:rounded-xl border border-slate-200/60 p-2.5 sm:p-3 shadow-sm">
       
       <!-- Turnstile Widget -->
       <div v-if="isRequired" class="absolute -z-10">
@@ -39,10 +39,10 @@
         />
         <button
           type="submit"
-          :disabled="!input.trim() || isLoading || isOffline || (isRequired && !isVerified)"
+          :disabled="!input.trim() || isLoading || isOffline"
           :class="[
             'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-3 py-2 rounded transition-all duration-200 flex-shrink-0 shadow-lg shadow-blue-500/25',
-            (isLoading || isOffline || !input.trim() || (isRequired && !isVerified)) && 'opacity-50 cursor-not-allowed'
+            (isLoading || isOffline || !input.trim()) && 'opacity-50 cursor-not-allowed'
           ]"
         >
           <Icon name="lucide:send" class="w-3 h-3 sm:w-4 sm:h-4" />
@@ -68,6 +68,7 @@
           </span>
         </div>
       </div>
+
     </div>
   </div>
 </template>

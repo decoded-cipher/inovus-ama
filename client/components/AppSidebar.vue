@@ -61,7 +61,7 @@
             :key="index"
             :disabled="isLoading || isOffline"
             :class="[
-              'w-full text-left p-3 text-xs sm:text-sm text-slate-600 hover:text-slate-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 rounded-lg transition-all duration-200 border border-transparent hover:border-blue-100/60',
+              'w-full text-left p-3 text-xs sm:text-sm text-slate-600 hover:text-slate-900 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 rounded transition-all duration-200 border border-transparent hover:border-blue-100/60',
               (isLoading || isOffline) && 'opacity-50 cursor-not-allowed'
             ]"
             @click="$emit('question-click', question)"
@@ -76,7 +76,7 @@
         <button
           :disabled="isLoading || isOffline"
           :class="[
-            'w-full p-3 text-xs sm:text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded-lg transition-all duration-200 border border-slate-200/60 hover:border-slate-300/60 flex items-center justify-center gap-2',
+            'w-full p-3 text-xs sm:text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-50 rounded sm:rounded-xl transition-all duration-200 border border-slate-200/60 hover:border-slate-300/60 flex items-center justify-center gap-2',
             (isLoading || isOffline) && 'opacity-50 cursor-not-allowed'
           ]"
           @click="$emit('clear-conversation')"

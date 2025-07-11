@@ -1,5 +1,5 @@
 <template>
-  <div :style="{ minHeight: 'calc(var(--vh, 1vh) * 100)' }" class="bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 flex flex-col overflow-hidden">
+  <div :style="{ height: 'calc(var(--vh, 1vh) * 100)' }" class="bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 flex flex-col overflow-hidden">
     <!-- Header -->
     <AppHeader 
       :show-sidebar="showSidebar"

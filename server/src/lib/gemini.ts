@@ -67,12 +67,25 @@ export async function summarizeConversation(messages: ConversationMessage[], api
     .join('\n')
   
   const prompt = `
-    Summarize this conversation history in 2-3 sentences, focusing on key topics discussed and important context that would be relevant for answering follow-up questions:
-    
-    ${conversationText}
-    
-    Summary:
-  `.trim()
+<system_role>
+Summarize the provided conversation history into a concise summary that preserves key context for follow-up questions.
+</system_role>
+
+<conversation_history>
+${conversationText}
+</conversation_history>
+
+<instructions>
+- Create a 2-3 sentence summary
+- Focus on key topics discussed about Inovus Labs IEDC
+- Preserve important context relevant for answering follow-up questions
+- Be concise but comprehensive
+</instructions>
+
+<output_format>
+Return only the summary text, no additional formatting.
+</output_format>
+`.trim()
 
   const { model } = getGeminiClient(apiKey)
   const result = await model.generateContent({ contents: [{ parts: [{ text: prompt }] }] })
@@ -121,23 +134,50 @@ export async function generateFollowUpPrompt(
   const questionLabel = isFollowUp ? "Follow-up" : "Question"
   
   return `
-You are an assistant for Inovus Labs IEDC at Kristu Jyoti College (inovuslabs.org, @inovuslabs).
+<system_role>
+You are an AI assistant for Inovus Labs IEDC at Kristu Jyoti College (inovuslabs.org, @inovuslabs). You MUST only use the provided context to answer questions.
+</system_role>
 
-Context: ${context}
-${liveData ? `Live Data: ${liveData}\n` : ''}
-${conversationSummary ? `${isFollowUp ? 'Previous Context' : 'History'}: ${conversationSummary}\n` : ''}
+<knowledge_base>
+<static_context>
+${context}
+</static_context>
 
-${questionLabel}: ${question}
+${liveData ? `<live_data>\n${liveData}\n</live_data>\n` : ''}
 
-RULES:
-- Only answer Inovus Labs IEDC questions
-${!isFollowUp ? '- Topics: programs, events, startups, innovation, entrepreneurship, workshops, mentorship, funding\n' : ''}
-- Off-topic → Mention that you can only answer Inovus Labs IEDC questions
-- No info → Mention that you don't have that information and suggest checking the website or socials
-${isFollowUp ? '- Build on previous conversation naturally\n' : ''}
-${!isFollowUp ? '- Provide actionable next steps if applicable\n' : ''}
-- Get result as proper HTML with appropriate tags. Use semantic HTML structure (body). No markdown formatting. No CSS styles.
-- Use a friendly, helpful tone. Use emojis where appropriate.
+${conversationSummary ? `<conversation_history>\n${conversationSummary}\n</conversation_history>\n` : ''}
+</knowledge_base>
+
+<user_query type="${isFollowUp ? 'follow_up' : 'initial'}">
+${question}
+</user_query>
+
+<instructions>
+<primary_constraints>
+- CRITICAL: You can ONLY answer questions about Inovus Labs IEDC using the provided context above
+- If the answer is not found in the provided context, you MUST respond: "I don't have that specific information in my knowledge base. Please check our website at inovuslabs.org or follow our social media @inovuslabs for the most up-to-date information."
+- NEVER make up or infer information not explicitly provided in the context
+- NEVER use external knowledge beyond what's provided
+</primary_constraints>
+
+<topic_scope>
+${!isFollowUp ? `- Valid topics: programs, events, startups, innovation, entrepreneurship, workshops, mentorship, funding opportunities\n` : ''}
+- For off-topic questions: "I can only answer questions related to Inovus Labs IEDC. Please ask about our programs, events, or initiatives."
+</topic_scope>
+
+<response_guidelines>
+${isFollowUp ? '- Build naturally on the previous conversation context\n' : ''}
+${!isFollowUp ? '- Provide actionable next steps when applicable\n' : ''}
+- Use proper HTML with semantic structure (body tag)
+- NO markdown formatting, NO CSS styles
+- Maintain a friendly, helpful tone
+- Use emojis appropriately to enhance engagement
+</response_guidelines>
+
+<output_format>
+Respond with clean HTML using semantic tags. Structure your response within a body tag.
+</output_format>
+</instructions>
 `.trim()
 }
 
@@ -223,13 +263,31 @@ export async function generateFollowUpSuggestions(
   apiKey: string
 ): Promise<string[]> {
   const prompt = `
-Based on this assistant response and conversation context, generate 3 relevant follow-up questions that a user might want to ask next. Make them specific and actionable.
+<system_role>
+Generate relevant follow-up questions based on the assistant's response and conversation context.
+</system_role>
 
-Assistant's last response: ${lastAssistantMessage}
+<context>
+<assistant_response>
+${lastAssistantMessage}
+</assistant_response>
 
-Conversation context: ${conversationContext}
+<conversation_context>
+${conversationContext}
+</conversation_context>
+</context>
 
-Generate exactly 1 follow-up questions, one per line, without numbering or bullets:
+<instructions>
+- Generate exactly 3 specific and actionable follow-up questions
+- Questions should be relevant to Inovus Labs IEDC topics
+- Make them natural conversation continuations
+- Focus on practical next steps or deeper information
+- One question per line, no numbering or bullets
+</instructions>
+
+<output_format>
+Return exactly 3 questions, one per line.
+</output_format>
 `.trim()
 
   try {

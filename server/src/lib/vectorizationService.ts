@@ -60,7 +60,7 @@ export async function vectorizeFileChunks(
         ...metadata
       }
       
-      await insertVector(embedding, `${fileKey}_chunk_${i}`, chunkMetadata, env)
+      await insertVector(embedding, chunk, chunkMetadata, env)
       result.chunksProcessed++
     } catch (vectorError) {
       const errorMsg = `Failed to vectorize chunk ${i}: ${(vectorError as Error).message}`

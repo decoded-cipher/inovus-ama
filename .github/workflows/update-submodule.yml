@@ -1,0 +1,32 @@
+name: Update Submodule
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Daily at 00:00 UTC
+  workflow_dispatch:      # Manual trigger
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+      
+      - name: Update submodule
+        run: git submodule update --remote --merge
+      
+      - name: Add changes
+        run: git add _data
+      
+      - name: Configure git
+        run: |
+          git config --global user.email "bot@inovuslabs.org"
+          git config --global user.name "inobot"
+      
+      - name: Commit changes
+        run: git commit -m "Update _data submodule" || exit 0
+      
+      - name: Push changes
+        run: git push

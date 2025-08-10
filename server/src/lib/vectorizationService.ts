@@ -20,7 +20,7 @@ export interface VectorizationResult {
 export async function vectorizeFileChunks(
   chunks: string[], 
   options: VectorizationOptions,
-  env: any = env
+  env: any
 ): Promise<VectorizationResult> {
   const { 
     fileKey, 

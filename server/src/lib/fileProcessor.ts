@@ -1,5 +1,5 @@
 
-import { extractPDFText, extractDocxText, splitTextIntoChunks } from './textExtraction'
+import { splitTextIntoChunks, extractMarkdownText } from './textExtraction'
 
 export interface FileProcessingResult {
   textContent: string
@@ -15,9 +15,17 @@ export interface SupportedFileType {
 
 const FILE_TYPES: SupportedFileType[] = [
   {
-    extensions: ['.txt', '.md'],
-    mimeTypes: ['text/plain', 'text/markdown'],
+    extensions: ['.txt'],
+    mimeTypes: ['text/plain'],
     processor: async (file: File) => await file.text()
+  },
+  {
+    extensions: ['.md', '.mdx'],
+    mimeTypes: ['text/markdown', 'text/x-markdown'],
+    processor: async (file: File) => {
+      const rawContent = await file.text()
+      return extractMarkdownText(rawContent)
+    }
   },
   {
     extensions: ['.json'],

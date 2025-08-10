@@ -41,7 +41,7 @@ app.get('/', (c) => c.json({
 app.route('/api/v1', apiRouter);
 
 
-app.use((c) => c.json({
+app.use(async (c) => c.json({
   status: 'Not Found',
   message: 'API endpoint not found',
 }, 404));

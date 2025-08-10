@@ -1,4 +1,4 @@
-import { env } from 'hono/adapter'
+
 
 
 export interface VectorMatch {
@@ -17,7 +17,7 @@ export interface VectorMatch {
  * @returns A promise that resolves to an array of VectorMatch objects
  */
 
-export async function searchVectorizeDB(queryVector: number[], env: any = env): Promise<VectorMatch[]> {
+export async function searchVectorizeDB(queryVector: number[], env: any): Promise<VectorMatch[]> {
   console.log(`--- Searching Pinecone for vector: ${queryVector.slice(0, 5)}...`)
 
   const response = await fetch(`${env.PINECONE_ENV}/query`, {
@@ -34,7 +34,7 @@ export async function searchVectorizeDB(queryVector: number[], env: any = env): 
   })
 
   if (!response.ok) return []
-  const results = await response.json()
+  const results = await response.json() as any
 
   console.log(`--- Found ${results.matches?.length || 0} matches for vector.`);
 
@@ -56,7 +56,7 @@ export async function searchVectorizeDB(queryVector: number[], env: any = env): 
  * @param metadata - Additional metadata to store with the vector
  */
 
-export async function insertVector(embedding: number[], content: string, metadata: any = {}, env: any = env): Promise<void> {
+export async function insertVector(embedding: number[], content: string, metadata: any = {}, env: any): Promise<void> {
   console.log(`--- Inserting vector with content: "${content.slice(0, 50)}..."`)
   
   await fetch(`${env.PINECONE_ENV}/vectors/upsert`, {

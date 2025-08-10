@@ -37,10 +37,7 @@ export async function isInovusQuestion(question: string, env: any): Promise<bool
     console.log(`--- Checking relevance for: "${question}"`);
     
     const embedding = await getEmbedding(question, env.GEMINI_API_KEY);
-    const matches = await searchVectorizeDB(embedding, {
-      topK: RELEVANCE_CONFIG.MAX_RESULTS,
-      minScore: RELEVANCE_CONFIG.MIN_SIMILARITY_THRESHOLD
-    }, env);
+    const matches = await searchVectorizeDB(embedding, env);
 
     const isRelevant = matches.length >= RELEVANCE_CONFIG.MIN_MATCHES_FOR_RELEVANCE;
 

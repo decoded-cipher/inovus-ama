@@ -37,7 +37,7 @@ export async function getEmbedding(text: string, apiKey: string): Promise<number
   console.log(`\n\n--- Generating embedding for text: "${text.slice(0, 50)}..."`);
   
   const { embedModel } = getGeminiClient(apiKey)
-  const result = await embedModel.embedContent({ content: { parts: [{ text }] } })
+  const result = await embedModel.embedContent({ content: { role: 'user', parts: [{ text }] } })
   if (!result.embedding || !result.embedding.values) {
     throw new Error('--- Failed to generate embedding')
   }
@@ -88,7 +88,7 @@ Return only the summary text, no additional formatting.
 `.trim()
 
   const { model } = getGeminiClient(apiKey)
-  const result = await model.generateContent({ contents: [{ parts: [{ text: prompt }] }] })
+  const result = await model.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
   return result.response.text()
 }
 
@@ -243,7 +243,7 @@ export async function askGemini(
   // console.log(`\n\n${prompt}\n\n`)
 
   const { model } = getGeminiClient(apiKey)
-  const result = await model.generateContent({ contents: [{ parts: [{ text: prompt }] }] })
+  const result = await model.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
   return result.response.text()
 }
 
@@ -292,7 +292,7 @@ Return exactly 3 questions, one per line.
 
   try {
     const { model } = getGeminiClient(apiKey)
-    const result = await model.generateContent({ contents: [{ parts: [{ text: prompt }] }] })
+    const result = await model.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
     const suggestions = result.response.text()
       .split('\n')
       .filter(line => line.trim().length > 0)

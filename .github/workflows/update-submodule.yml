@@ -19,7 +19,7 @@ jobs:
         run: git submodule update --remote --merge
       
       - name: Add changes
-        run: git add _data
+        run: git add mintlify
       
       - name: Configure git
         run: |

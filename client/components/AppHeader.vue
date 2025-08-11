@@ -13,7 +13,7 @@
             <div class="flex items-center space-x-1 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100/60 rounded-full px-2 py-0.5">
               <div class="w-1.5 h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full animate-pulse"></div>
               <span class="text-xs font-medium bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                v2.1.0-beta
+                {{ $nuxt.$config.public.version }}
               </span>
             </div>
           </div>

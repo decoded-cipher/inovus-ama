@@ -28,11 +28,12 @@
       
       <form @submit.prevent="handleSubmit" class="flex items-center space-x-2 sm:space-x-3">
         <input
+          ref="inputField"
           :value="input"
           :disabled="isLoading || isOffline"
           :placeholder="isOffline ? 'Service is offline. Please wait...' : 'Ask me anything about Inovus Labs...'"
           :class="[
-            'flex-1 border-0 bg-transparent focus:ring-2 focus:ring-blue-500/20 text-slate-900 placeholder:text-slate-500 text-sm outline-none',
+            'flex-1 border-0 bg-transparent text-slate-900 placeholder:text-slate-500 text-sm outline-none',
             isOffline && 'cursor-not-allowed opacity-60'
           ]"
           @input="$emit('update:input', ($event.target as HTMLInputElement).value)"
@@ -74,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onMounted } from 'vue'
 import { useTurnstile } from '~/composables/useTurnstile'
 
 interface Message {
@@ -100,6 +101,7 @@ const emit = defineEmits<{
 
 const messagesContainer = ref<HTMLElement>()
 const turnstileWidget = ref()
+const inputField = ref<HTMLInputElement>()
 
 const {
   isVerified,
@@ -114,11 +116,20 @@ const {
   expire
 } = useTurnstile()
 
+// Focus input field when component mounts
+onMounted(() => {
+  focusInput()
+})
+
 // Auto-scroll to bottom when new messages are added
 watch(() => props.messages, () => {
   nextTick(() => {
     if (messagesContainer.value) {
       messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    }
+    // Also focus input after messages change
+    if (inputField.value && !props.isLoading) {
+      focusInput()
     }
   })
 }, { deep: true })
@@ -149,6 +160,14 @@ const handleTurnstileExpired = () => {
   expire()
 }
 
+const focusInput = () => {
+  setTimeout(() => {
+    if (inputField.value) {
+      inputField.value.focus()
+    }
+  }, 50)
+}
+
 const handleSubmit = () => {
   if (isRequired.value && !isVerified.value) {
     setError('Please complete the security verification.')
@@ -162,5 +181,8 @@ const handleSubmit = () => {
     turnstileWidget.value.reset()
   }
   reset()
+  
+  // Focus input after submission
+  focusInput()
 }
 </script>

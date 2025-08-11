@@ -27,7 +27,7 @@ jobs:
           git config --global user.name "inobot"
       
       - name: Commit changes
-        run: git commit -m "Update _data submodule" || exit 0
+        run: git commit -m "Update mintlify submodule" || exit 0
       
       - name: Push changes
         run: git push

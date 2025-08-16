@@ -437,21 +437,22 @@ const fileInput = ref<HTMLInputElement>()
 
 // Computed
 const canSubmit = computed(() => {
-  // Allow submission if form is filled and either verified or Turnstile is not available
+  // Allow submission if form is filled
   const subjectValid = Boolean(subject.value.trim())
   const descriptionValid = Boolean(description.value.trim())
   const formValid = subjectValid && descriptionValid && !isSubmitting.value
   
-  const config = useRuntimeConfig()
-  const turnstileAvailable = config.public.turnstile && (config.public.turnstile as any).siteKey
+  // Debug logging
+  console.log('Form validation:', {
+    subjectValid,
+    descriptionValid,
+    isSubmitting: isSubmitting.value,
+    formValid
+  })
   
-  // If Turnstile is not available, allow submission
-  if (!turnstileAvailable) {
-    return formValid
-  }
-  
-  // If Turnstile is available, require verification OR allow after timeout
-  return formValid && (isVerified.value || feedbackTurnstileState.value.token === 'delayed-verification')
+  // Always allow submission if form is valid - don't block on Turnstile
+  // Turnstile verification is optional and handled on the backend
+  return formValid
 })
 
 const turnstileAvailable = computed(() => {
@@ -468,32 +469,17 @@ const handleTurnstileVerified = (token: string) => {
 const handleTurnstileError = (error: string) => {
   console.warn('Turnstile error:', error)
   setError(error)
-  // Fallback: allow submission after error
-  setTimeout(() => {
-    if (!isVerified.value) {
-      console.log('Enabling submission after Turnstile error')
-      setVerified('error-fallback')
-    }
-  }, 1000)
+  // Fallback: allow submission immediately after error
+  console.log('Enabling submission after Turnstile error')
+  setVerified('error-fallback')
 }
 
 const handleTurnstileExpired = () => {
   console.log('Turnstile expired')
   setError('Verification expired')
-  // Auto-retry after expiration
-  setTimeout(() => {
-    if (turnstileRef.value && turnstileRef.value.turnstile) {
-      try {
-        turnstileRef.value.turnstile.execute()
-      } catch (error) {
-        console.warn('Turnstile retry failed:', error)
-        // Fallback: allow submission
-        setVerified('expired-fallback')
-      }
-    } else {
-      setVerified('expired-fallback')
-    }
-  }, 500)
+  // Allow submission immediately after expiration
+  console.log('Enabling submission after Turnstile expiration')
+  setVerified('expired-fallback')
 }
 
 // Auto-verify Turnstile when modal opens
@@ -509,6 +495,9 @@ const autoVerifyTurnstile = () => {
     setVerified('fallback-verified')
     return
   }
+  
+  // Enable submission immediately as fallback, then try to verify
+  setVerified('immediate-fallback')
   
   // Wait for the widget to be ready
   setTimeout(() => {
@@ -526,14 +515,6 @@ const autoVerifyTurnstile = () => {
       console.warn('Turnstile auto-verification failed:', error)
     }
   }, 1000)
-  
-  // Fallback: if verification doesn't happen within a reasonable time, enable submission
-  setTimeout(() => {
-    if (!isVerified.value) {
-      console.log('Turnstile verification timeout, enabling submission as fallback')
-      setVerified('delayed-verification')
-    }
-  }, 3000)
 }
 
 // Methods

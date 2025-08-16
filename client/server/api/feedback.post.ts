@@ -71,6 +71,7 @@ export default defineEventHandler(async (event) => {
     }
 
     // Get Discord webhook URL from environment
+    const config = useRuntimeConfig(event)
     const discordWebhookUrl = config.discordWebhookUrl
     if (!discordWebhookUrl) {
       console.error('Discord webhook URL not configured')

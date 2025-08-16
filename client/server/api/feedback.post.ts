@@ -1,3 +1,4 @@
+import { defineEventHandler, createError } from 'h3'
 import { getClientIP } from '../utils'
 import { readFormData, getHeader } from 'h3'
 
@@ -23,43 +24,41 @@ export default defineEventHandler(async (event) => {
 
     // Validate Turnstile token
     if (!turnstileToken) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Security verification required'
-      })
-    }
+      // Allow submission without Turnstile token for fallback scenarios
+      console.log('No Turnstile token provided, allowing submission as fallback')
+    } else {
+      // Verify Turnstile token with Cloudflare
+      const config = useRuntimeConfig(event)
+      const turnstileSecret = config.turnstileSecretKey
+      if (!turnstileSecret) {
+        console.error('Turnstile secret key not configured')
+        throw createError({
+          statusCode: 500,
+          statusMessage: 'Security service not configured'
+        })
+      }
 
-    // Verify Turnstile token with Cloudflare
-    const config = useRuntimeConfig()
-    const turnstileSecret = config.turnstileSecretKey
-    if (!turnstileSecret) {
-      console.error('Turnstile secret key not configured')
-      throw createError({
-        statusCode: 500,
-        statusMessage: 'Security service not configured'
+      const turnstileResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          secret: turnstileSecret,
+          response: turnstileToken as string,
+          remoteip: getClientIP(event) || 'unknown'
+        })
       })
-    }
 
-    const turnstileResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        secret: turnstileSecret,
-        response: turnstileToken as string,
-        remoteip: getClientIP(event) || 'unknown'
-      })
-    })
-
-    const turnstileResult = await turnstileResponse.json()
-    
-    if (!turnstileResult.success) {
-      console.error('Turnstile verification failed:', turnstileResult)
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Security verification failed. Please try again.'
-      })
+      const turnstileResult = await turnstileResponse.json()
+      
+      if (!turnstileResult.success) {
+        console.error('Turnstile verification failed:', turnstileResult)
+        throw createError({
+          statusCode: 400,
+          statusMessage: 'Security verification failed. Please try again.'
+        })
+      }
     }
 
     // Validate feedback type

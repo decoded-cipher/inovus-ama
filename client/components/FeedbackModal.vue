@@ -274,10 +274,6 @@
               @error="handleTurnstileError"
               @expired="handleTurnstileExpired"
             />
-            <div v-if="turnstileError" class="mt-2 text-sm text-red-600 flex items-center space-x-1">
-              <Icon name="lucide:alert-circle" class="w-4 h-4" />
-              <span>{{ turnstileError }}</span>
-            </div>
           </div>
 
           <!-- Form Submission Note -->
@@ -312,24 +308,6 @@
                 ]">
                   Your feedback will be securely sent to our Discord server where our team can review and respond promptly. 
                   <span class="font-medium">All submissions are protected by security measures.</span>
-                  <span v-if="!isVerified" :class="[
-                    'block mt-1',
-                    feedbackType === 'bug' 
-                      ? 'text-red-600' 
-                      : 'text-blue-600'
-                  ]">
-                    <Icon name="lucide:loader-2" class="w-3 h-3 inline animate-spin mr-1" />
-                    {{ turnstileError || 'Verifying security...' }}
-                  </span>
-                  <span v-else :class="[
-                    'block mt-1',
-                    feedbackType === 'bug' 
-                      ? 'text-green-600' 
-                      : 'text-green-600'
-                  ]">
-                    <Icon name="lucide:check-circle" class="w-3 h-3 inline mr-1" />
-                    Security verified ✓
-                  </span>
                 </p>
               </div>
             </div>
@@ -383,11 +361,6 @@
               <span>{{ isSubmitting ? 'Sending...' : canSubmit ? 'Send Feedback' : 'Complete Form' }}</span>
             </button>
             
-            <!-- Debug info (only in development) -->
-            <div class="mt-2 text-xs text-slate-500">
-              <div>Debug: Subject: "{{ subject.trim() }}" | Description: "{{ description.trim() }}"</div>
-              <div>Turnstile: {{ isVerified ? 'Verified' : 'Not Verified' }} | Can Submit: {{ canSubmit }}</div>
-            </div>
           </div>
         </div>
       </div>
@@ -397,7 +370,6 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useTurnstile } from '../composables/useTurnstile'
 import { useRuntimeConfig } from 'nuxt/app'
 
 interface Props {
@@ -411,10 +383,40 @@ const emit = defineEmits<{
   'submitted': []
 }>()
 
-// Turnstile integration
-const { isVerified, setVerified, setError, reset: resetTurnstile } = useTurnstile()
+// Turnstile integration - Create separate instance for feedback modal
+const feedbackTurnstileState = ref({
+  token: '',
+  verified: false,
+  error: null as string | null
+})
+
+const isVerified = computed(() => feedbackTurnstileState.value.verified)
+
+const setVerified = (tokenValue: string) => {
+  feedbackTurnstileState.value = {
+    token: tokenValue,
+    verified: true,
+    error: null
+  }
+}
+
+const setError = (error: string) => {
+  feedbackTurnstileState.value = {
+    token: '',
+    verified: false,
+    error
+  }
+}
+
+const resetTurnstile = () => {
+  feedbackTurnstileState.value = {
+    token: '',
+    verified: false,
+    error: null
+  }
+}
+
 const turnstileRef = ref()
-const turnstileError = ref<string | null>(null)
 
 // Form data
 const feedbackType = ref<'bug' | 'suggestion'>('suggestion')
@@ -436,70 +438,49 @@ const fileInput = ref<HTMLInputElement>()
 // Computed
 const canSubmit = computed(() => {
   // Allow submission if form is filled and either verified or Turnstile is not available
-  const formValid = subject.value.trim() && description.value.trim() && !isSubmitting.value
+  const subjectValid = Boolean(subject.value.trim())
+  const descriptionValid = Boolean(description.value.trim())
+  const formValid = subjectValid && descriptionValid && !isSubmitting.value
+  
   const config = useRuntimeConfig()
   const turnstileAvailable = config.public.turnstile && (config.public.turnstile as any).siteKey
   const canProceed = formValid && (isVerified.value || !turnstileAvailable)
   
-  // TEMPORARY: Bypass Turnstile verification for debugging
-  const debugMode = true
-  const finalCanSubmit = debugMode ? formValid : canProceed
-  
-  // Debug logging
-  console.log('canSubmit debug:', {
-    formValid,
-    turnstileAvailable,
-    isVerified: isVerified.value,
-    canProceed,
-    debugMode,
-    finalCanSubmit,
-    subject: subject.value.trim(),
-    description: description.value.trim(),
-    isSubmitting: isSubmitting.value
-  })
-  
-  return finalCanSubmit
+  return canProceed
+})
+
+const turnstileAvailable = computed(() => {
+  const config = useRuntimeConfig()
+  return !!(config.public.turnstile && (config.public.turnstile as any).siteKey)
 })
 
 // Turnstile event handlers
 const handleTurnstileVerified = (token: string) => {
   setVerified(token)
-  turnstileError.value = null
 }
 
 const handleTurnstileError = (error: string) => {
   setError(error)
-  turnstileError.value = 'Verification failed. Please try again.'
 }
 
 const handleTurnstileExpired = () => {
   setError('Verification expired')
-  turnstileError.value = 'Verification expired. Please complete the challenge again.'
 }
 
 // Auto-verify Turnstile when modal opens
 const autoVerifyTurnstile = () => {
-  console.log('Auto-verifying Turnstile...')
-  console.log('turnstileRef.value:', turnstileRef.value)
-  
   if (turnstileRef.value && turnstileRef.value.turnstile) {
-    console.log('Turnstile widget found, attempting auto-execute...')
     // Wait for the widget to be ready
     setTimeout(() => {
       try {
         // Trigger Turnstile verification automatically
         if (turnstileRef.value.turnstile && typeof turnstileRef.value.turnstile.execute === 'function') {
-          console.log('Executing Turnstile...')
           turnstileRef.value.turnstile.execute()
-        } else {
-          console.warn('Turnstile execute method not found')
         }
       } catch (error) {
         console.warn('Turnstile auto-verification failed:', error)
       }
     }, 500)
-  } else {
-    console.log('Turnstile widget not found')
   }
   
   // Fallback: if Turnstile is not available or fails, enable submission after a delay
@@ -507,11 +488,8 @@ const autoVerifyTurnstile = () => {
     const config = useRuntimeConfig()
     const turnstileAvailable = config.public.turnstile && (config.public.turnstile as any).siteKey
     
-    console.log('Turnstile fallback check:', { turnstileAvailable, isVerified: isVerified.value })
-    
     if (!turnstileAvailable || !isVerified.value) {
       // Enable submission even without Turnstile verification
-      console.log('Enabling fallback verification')
       setVerified('fallback-verified')
     }
   }, 3000)
@@ -534,7 +512,6 @@ const resetForm = () => {
   imagePreview.value = undefined
   isSubmitting.value = false
   isDragOver.value = false
-  turnstileError.value = null
   submissionState.value = 'form'
   errorMessage.value = ''
   resetTurnstile()
@@ -546,7 +523,6 @@ const resetForm = () => {
 const resetSubmissionState = () => {
   submissionState.value = 'form'
   errorMessage.value = ''
-  turnstileError.value = null
   resetTurnstile()
   if (turnstileRef.value) {
     turnstileRef.value.reset()
@@ -625,8 +601,8 @@ const submitFeedback = async () => {
     const config = useRuntimeConfig()
     const turnstileAvailable = config.public.turnstile && (config.public.turnstile as any).siteKey
     
-    if (turnstileAvailable && isVerified.value && useTurnstile().token.value) {
-      formData.append('cf-turnstile-response', useTurnstile().token.value)
+    if (turnstileAvailable && isVerified.value && feedbackTurnstileState.value.token) {
+      formData.append('cf-turnstile-response', feedbackTurnstileState.value.token)
     } else if (turnstileAvailable && !isVerified.value) {
       throw new Error('Security verification required. Please wait a moment and try again.')
     }

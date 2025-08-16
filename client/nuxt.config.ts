@@ -168,6 +168,7 @@ export default defineNuxtConfig({
   // Runtime config
   runtimeConfig: {
     turnstileSecretKey: process.env.NUXT_TURNSTILE_SECRET_KEY,
+    discordWebhookUrl: process.env.NUXT_DISCORD_WEBHOOK_URL,
     public: {
       serverUrl: process.env.NUXT_PUBLIC_SERVER_URL,
       turnstile: {

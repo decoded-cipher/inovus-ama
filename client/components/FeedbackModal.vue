@@ -541,7 +541,8 @@ const submitFeedback = async () => {
   try {
     const formData = new FormData()
     formData.append('type', feedbackType.value === 'bug' ? 'bug' : 'improvement')
-    formData.append('description', `${subject.value.trim()}\n\n${description.value.trim()}`)
+    formData.append('subject', subject.value.trim())
+    formData.append('description', description.value.trim())
     if (contact.value.trim()) {
       formData.append('contactEmail', contact.value.trim())
     }

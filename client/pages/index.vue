@@ -23,6 +23,7 @@
         :is-offline="!healthStatus.isOnline"
         @question-click="handleQuestionClick"
         @clear-conversation="clearConversation"
+        @open-feedback="openFeedbackModal"
       />
 
       <!-- Right Side - Chat -->
@@ -47,6 +48,13 @@
         />
       </div>
     </div>
+
+    <!-- Feedback Modal -->
+    <FeedbackModal 
+      :is-open="showFeedbackModal"
+      @close="closeFeedbackModal"
+      @submitted="handleFeedbackSubmitted"
+    />
   </div>
 </template>
 
@@ -83,6 +91,7 @@ const messages = ref<Message[]>([
 const input = ref('')
 const isLoading = ref(false)
 const showSidebar = ref(false)
+const showFeedbackModal = ref(false)
 const dynamicSuggestions = ref<string[]>([])
 
 const suggestedQuestions = computed(() => {
@@ -107,6 +116,20 @@ const toggleSidebar = () => {
 
 const closeSidebar = () => {
   showSidebar.value = false
+}
+
+const openFeedbackModal = () => {
+  showFeedbackModal.value = true
+}
+
+const closeFeedbackModal = () => {
+  showFeedbackModal.value = false
+}
+
+const handleFeedbackSubmitted = () => {
+  // Show success message
+  console.log('Feedback submitted successfully')
+  // You can add a toast notification here if you have one
 }
 
 const handleQuestionClick = (question: string) => {

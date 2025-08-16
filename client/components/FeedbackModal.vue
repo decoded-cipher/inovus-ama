@@ -442,14 +442,6 @@ const canSubmit = computed(() => {
   const descriptionValid = Boolean(description.value.trim())
   const formValid = subjectValid && descriptionValid && !isSubmitting.value
   
-  // Debug logging
-  console.log('Form validation:', {
-    subjectValid,
-    descriptionValid,
-    isSubmitting: isSubmitting.value,
-    formValid
-  })
-  
   // Always allow submission if form is valid - don't block on Turnstile
   // Turnstile verification is optional and handled on the backend
   return formValid
@@ -624,16 +616,17 @@ const submitFeedback = async () => {
     const turnstileAvailable = config.public.turnstile && (config.public.turnstile as any).siteKey
     
     if (turnstileAvailable && isVerified.value && feedbackTurnstileState.value.token) {
-      // Check if it's a fallback token that should be sent
+      // Check if it's a real Turnstile token (not a fallback token)
       const token = feedbackTurnstileState.value.token
-      if (token && !token.startsWith('fallback-') && !token.startsWith('delayed-') && !token.startsWith('error-') && !token.startsWith('expired-')) {
+      if (token && !token.startsWith('fallback-') && !token.startsWith('delayed-') && !token.startsWith('error-') && !token.startsWith('expired-') && !token.startsWith('immediate-')) {
         formData.append('cf-turnstile-response', token)
+        console.log('Sending real Turnstile token for verification')
       } else {
         // For fallback tokens, we'll still submit but without the token
         console.log('Using fallback verification, submitting without Turnstile token')
       }
-    } else if (turnstileAvailable && !isVerified.value) {
-      throw new Error('Security verification required. Please wait a moment and try again.')
+    } else {
+      console.log('Turnstile not available or not verified, submitting without token')
     }
 
     const response = await fetch('/api/feedback', {

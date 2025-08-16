@@ -31,33 +31,34 @@ export default defineEventHandler(async (event) => {
       const config = useRuntimeConfig(event)
       const turnstileSecret = config.turnstileSecretKey
       if (!turnstileSecret) {
-        console.error('Turnstile secret key not configured')
-        throw createError({
-          statusCode: 500,
-          statusMessage: 'Security service not configured'
-        })
-      }
+        console.warn('Turnstile secret key not configured, skipping verification')
+        // Don't throw error, just log warning and continue
+      } else {
+        try {
+          const turnstileResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: new URLSearchParams({
+              secret: turnstileSecret,
+              response: turnstileToken as string,
+              remoteip: getClientIP(event) || 'unknown'
+            })
+          })
 
-      const turnstileResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          secret: turnstileSecret,
-          response: turnstileToken as string,
-          remoteip: getClientIP(event) || 'unknown'
-        })
-      })
-
-      const turnstileResult = await turnstileResponse.json()
-      
-      if (!turnstileResult.success) {
-        console.error('Turnstile verification failed:', turnstileResult)
-        throw createError({
-          statusCode: 400,
-          statusMessage: 'Security verification failed. Please try again.'
-        })
+          const turnstileResult = await turnstileResponse.json()
+          
+          if (!turnstileResult.success) {
+            console.warn('Turnstile verification failed, but allowing submission:', turnstileResult)
+            // Don't block submission, just log the failure
+          } else {
+            console.log('Turnstile verification successful')
+          }
+        } catch (error) {
+          console.warn('Turnstile verification error, but allowing submission:', error)
+          // Don't block submission on verification errors
+        }
       }
     }
 

@@ -1,5 +1,5 @@
 
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenAI } from '@google/genai'
 
 
 interface ConversationMessage {
@@ -13,14 +13,33 @@ interface ConversationMessage {
 /**
  * Initializes the Gemini client with the provided API key.
  * @param apiKey - The Gemini API key
- * @returns An object containing the generative model and embedding model
+ * @returns Object containing model functions
  */
 
 function getGeminiClient(apiKey: string) {
-  const genAI = new GoogleGenerativeAI(apiKey)
+  const ai = new GoogleGenAI({ apiKey })
+  
   return {
-    model: genAI.getGenerativeModel({ model: 'models/gemini-2.5-flash' }),
-    embedModel: genAI.getGenerativeModel({ model: 'models/embedding-001' })
+    generateContent: async (prompt: string) => {
+      const result = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt
+      })
+      return result.text
+    },
+    
+    embedContent: async (text: string) => {
+      const result = await ai.models.embedContent({
+        model: 'gemini-embedding-001',
+        contents: text
+      })
+      
+      if (!result.embeddings || result.embeddings.length === 0 || !result.embeddings[0].values) {
+        throw new Error('Failed to generate embedding')
+      }
+      
+      return result.embeddings[0].values
+    }
   }
 }
 
@@ -36,18 +55,15 @@ function getGeminiClient(apiKey: string) {
 export async function getEmbedding(text: string, apiKey: string): Promise<number[]> {
   console.log(`\n\n--- Generating embedding for text: "${text.slice(0, 50)}..."`);
   
-  const { embedModel } = getGeminiClient(apiKey)
-  const result = await embedModel.embedContent({ content: { role: 'user', parts: [{ text }] } })
-  if (!result.embedding || !result.embedding.values) {
-    throw new Error('--- Failed to generate embedding')
-  }
-
-  console.log(`--- Generated embedding of length: ${result.embedding.values.length}`);
-  if (result.embedding.values.length === 0) {
+  const client = getGeminiClient(apiKey)
+  const embedding = await client.embedContent(text)
+  
+  console.log(`--- Generated embedding of length: ${embedding.length}`);
+  if (embedding.length === 0) {
     throw new Error('--- Embedding is empty')
   }
   
-  return result.embedding.values
+  return embedding
 }
 
 
@@ -87,9 +103,8 @@ Return only the summary text, no additional formatting.
 </output_format>
 `.trim()
 
-  const { model } = getGeminiClient(apiKey)
-  const result = await model.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
-  return result.response.text()
+  const client = getGeminiClient(apiKey)
+  return await client.generateContent(prompt)
 }
 
 
@@ -242,9 +257,8 @@ export async function askGemini(
   console.log(`--- Generated prompt for Gemini.`)
   // console.log(`\n\n${prompt}\n\n`)
 
-  const { model } = getGeminiClient(apiKey)
-  const result = await model.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
-  return result.response.text()
+  const client = getGeminiClient(apiKey)
+  return await client.generateContent(prompt)
 }
 
 
@@ -291,9 +305,8 @@ Return exactly 3 questions, one per line.
 `.trim()
 
   try {
-    const { model } = getGeminiClient(apiKey)
-    const result = await model.generateContent({ contents: [{ role: 'user', parts: [{ text: prompt }] }] })
-    const suggestions = result.response.text()
+    const client = getGeminiClient(apiKey)
+    const suggestions = await client.generateContent(prompt)
       .split('\n')
       .filter(line => line.trim().length > 0)
       .slice(0, 3)

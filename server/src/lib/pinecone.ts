@@ -1,5 +1,5 @@
 
-
+import { Pinecone } from '@pinecone-database/pinecone'
 
 export interface VectorMatch {
   id: string
@@ -20,21 +20,14 @@ export interface VectorMatch {
 export async function searchVectorizeDB(queryVector: number[], env: any): Promise<VectorMatch[]> {
   console.log(`--- Searching Pinecone for vector: ${queryVector.slice(0, 5)}...`)
 
-  const response = await fetch(`${env.PINECONE_ENV}/query`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Api-Key': env.PINECONE_API_KEY,
-    },
-    body: JSON.stringify({
-      vector: queryVector,
-      topK: 5,
-      includeMetadata: true,
-    }),
-  })
+  const pc = new Pinecone({ apiKey: env.PINECONE_API_KEY })
+  const index = pc.Index(env.PINECONE_INDEX_NAME, env.PINECONE_ENV)
 
-  if (!response.ok) return []
-  const results = await response.json() as any
+  const results = await index.query({
+    vector: queryVector,
+    topK: 5,
+    includeMetadata: true,
+  })
 
   console.log(`--- Found ${results.matches?.length || 0} matches for vector.`);
 
@@ -59,20 +52,14 @@ export async function searchVectorizeDB(queryVector: number[], env: any): Promis
 export async function insertVector(embedding: number[], content: string, metadata: any = {}, env: any): Promise<void> {
   console.log(`--- Inserting vector with content: "${content.slice(0, 50)}..."`)
   
-  await fetch(`${env.PINECONE_ENV}/vectors/upsert`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Api-Key': env.PINECONE_API_KEY,
+  const pc = new Pinecone({ apiKey: env.PINECONE_API_KEY })
+  const index = pc.Index(env.PINECONE_INDEX_NAME, env.PINECONE_ENV)
+
+  await index.upsert([
+    {
+      id: crypto.randomUUID(),
+      values: embedding,
+      metadata: { content, ...metadata },
     },
-    body: JSON.stringify({
-      vectors: [
-        {
-          id: crypto.randomUUID(),
-          values: embedding,
-          metadata: { content, ...metadata },
-        },
-      ],
-    }),
-  })
+  ])
 }

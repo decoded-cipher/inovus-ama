@@ -48,7 +48,11 @@ export async function vectorizeFileChunks(
     }
     
     try {
-      const embedding = await getEmbedding(chunk, env.GEMINI_API_KEY)
+      const embedding = await getEmbedding(
+        chunk, 
+        env.GEMINI_API_KEY,
+        env.GEMINI_EMBEDDING_MODEL
+      )
       const chunkMetadata = {
         filename: fileName,
         fileType: fileType,

@@ -13,25 +13,47 @@ interface ConversationMessage {
 /**
  * Initializes the Gemini client with the provided API key.
  * @param apiKey - The Gemini API key
+ * @param generativeModel - The generative model name
+ * @param embeddingModel - The embedding model name
  * @returns Object containing model functions
  */
 
-function getGeminiClient(apiKey: string) {
+function getGeminiClient(
+  apiKey: string, 
+  generativeModel: string,
+  embeddingModel: string
+) {
   const ai = new GoogleGenAI({ apiKey })
   
   return {
-    generateContent: async (prompt: string) => {
+    generateContent: async (prompt: string, systemInstruction: string) => {
       const result = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: prompt
+        model: generativeModel,
+        contents: prompt,
+        config: {
+          systemInstruction
+        }
       })
       return result.text
     },
     
+    createChat: (systemInstruction: string, history: Array<{ role: 'user' | 'model', parts: Array<{ text: string }> }> = []) => {
+      return ai.chats.create({
+        model: generativeModel,
+        config: {
+          systemInstruction
+        },
+        history
+      })
+    },
+    
     embedContent: async (text: string) => {
       const result = await ai.models.embedContent({
-        model: 'gemini-embedding-001',
-        contents: text
+        model: embeddingModel,
+        contents: text,
+        config: {
+          outputDimensionality: 768
+        }
       })
       
       if (!result.embeddings || result.embeddings.length === 0 || !result.embeddings[0].values) {
@@ -49,13 +71,18 @@ function getGeminiClient(apiKey: string) {
  * Generates an embedding for the given text using Gemini's embedding model.
  * @param text - The text to embed
  * @param apiKey - The Gemini API key
+ * @param embeddingModel - Optional embedding model name
  * @returns A promise that resolves to the embedding vector
  */
 
-export async function getEmbedding(text: string, apiKey: string): Promise<number[]> {
+export async function getEmbedding(
+  text: string, 
+  apiKey: string, 
+  embeddingModel?: string
+): Promise<number[]> {
   console.log(`\n\n--- Generating embedding for text: "${text.slice(0, 50)}..."`);
   
-  const client = getGeminiClient(apiKey)
+  const client = getGeminiClient(apiKey, undefined, embeddingModel)
   const embedding = await client.embedContent(text)
   
   console.log(`--- Generated embedding of length: ${embedding.length}`);
@@ -72,39 +99,38 @@ export async function getEmbedding(text: string, apiKey: string): Promise<number
  * Summarizes a conversation history into a concise summary.
  * @param messages - Array of conversation messages
  * @param apiKey - The Gemini API key
+ * @param generativeModel - Optional generative model name
  * @returns A promise that resolves to the summary text
  */
 
-export async function summarizeConversation(messages: ConversationMessage[], apiKey: string): Promise<string> {
+export async function summarizeConversation(
+  messages: ConversationMessage[], 
+  apiKey: string,
+  generativeModel?: string
+): Promise<string> {
   if (messages.length === 0) return ''
   
   const conversationText = messages
     .map(msg => `${msg.role}: ${msg.content}`)
     .join('\n')
   
-  const prompt = `
-<system_role>
-Summarize the provided conversation history into a concise summary that preserves key context for follow-up questions.
-</system_role>
+  const systemInstruction = `Summarize the provided conversation history into a concise summary that preserves key context for follow-up questions.
 
-<conversation_history>
-${conversationText}
-</conversation_history>
-
-<instructions>
+RULES:
 - Create a 2-3 sentence summary
 - Focus on key topics discussed about Inovus Labs IEDC
 - Preserve important context relevant for answering follow-up questions
 - Be concise but comprehensive
-</instructions>
+- Return only the summary text, no additional formatting`
 
-<output_format>
-Return only the summary text, no additional formatting.
-</output_format>
+  const prompt = `
+<conversation_history>
+${conversationText}
+</conversation_history>
 `.trim()
 
-  const client = getGeminiClient(apiKey)
-  return await client.generateContent(prompt)
+  const client = getGeminiClient(apiKey, generativeModel)
+  return await client.generateContent(prompt, systemInstruction)
 }
 
 
@@ -146,13 +172,7 @@ export async function generateFollowUpPrompt(
   conversationSummary: string,
   isFollowUp: boolean
 ): Promise<string> {
-  const questionLabel = isFollowUp ? "Follow-up" : "Question"
-  
   return `
-<system_role>
-You are an AI assistant for Inovus Labs IEDC at Kristu Jyoti College (inovuslabs.org, @inovuslabs). You MUST only use the provided context to answer questions.
-</system_role>
-
 <knowledge_base>
 <static_context>
 ${context}
@@ -168,30 +188,11 @@ ${question}
 </user_query>
 
 <instructions>
-<primary_constraints>
-- CRITICAL: You can ONLY answer questions about Inovus Labs IEDC using the provided context above
-- If the answer is not found in the provided context, you MUST respond: "I don't have that specific information in my knowledge base. Please check our website at inovuslabs.org or follow our social media @inovuslabs for the most up-to-date information."
-- NEVER make up or infer information not explicitly provided in the context
-- NEVER use external knowledge beyond what's provided
-</primary_constraints>
-
-<topic_scope>
-${!isFollowUp ? `- Valid topics: programs, events, startups, innovation, entrepreneurship, workshops, mentorship, funding opportunities\n` : ''}
-- For off-topic questions: "I can only answer questions related to Inovus Labs IEDC. Please ask about our programs, events, or initiatives."
-</topic_scope>
-
-<response_guidelines>
+${!isFollowUp ? '- Valid topics: programs, events, startups, innovation, entrepreneurship, workshops, mentorship, funding opportunities\n' : ''}
 ${isFollowUp ? '- Build naturally on the previous conversation context\n' : ''}
 ${!isFollowUp ? '- Provide actionable next steps when applicable\n' : ''}
-- Use proper HTML with semantic structure (body tag)
-- NO markdown formatting, NO CSS styles
-- Maintain a friendly, helpful tone
-- Use emojis appropriately to enhance engagement
-</response_guidelines>
-
-<output_format>
-Respond with clean HTML using semantic tags. Structure your response within a body tag.
-</output_format>
+- Respond with clean HTML using semantic tags
+- Structure your response within a body tag
 </instructions>
 `.trim()
 }
@@ -199,12 +200,13 @@ Respond with clean HTML using semantic tags. Structure your response within a bo
 
 
 /**
- * Asks Gemini a question with context, live data, and conversation history.
+ * Asks Gemini a question with context, live data, and conversation history using multi-turn chat.
  * @param question - The user's question
  * @param chunks - Static context chunks to include
  * @param liveData - Any live data relevant to the question
  * @param conversationHistory - Previous conversation messages
  * @param apiKey - The Gemini API key
+ * @param generativeModel - Optional generative model name
  * @returns A promise that resolves to the assistant's response
  */
 
@@ -213,52 +215,74 @@ export async function askGemini(
   chunks: string[], 
   liveData: string, 
   conversationHistory: ConversationMessage[] = [],
-  apiKey: string
+  apiKey: string,
+  generativeModel?: string
 ): Promise<string> {
   const context = chunks.length
     ? chunks.join('\n---\n')
     : '[No additional static context found.]'
   
-  // Summarize conversation history if it exists and is longer than 3 messages
+  const isFollowUp = await isFollowUpQuestion(question)
+  
+  // Handle conversation history: summarize old messages, keep recent ones
+  let history: Array<{ role: 'user' | 'model', parts: Array<{ text: string }> }> = []
   let conversationSummary = ''
-  if (conversationHistory.length > 3) {
+  
+  if (conversationHistory.length > 4) {
     // Keep last 2 exchanges (4 messages) and summarize the rest
     const messagesToSummarize = conversationHistory.slice(0, -4)
     const recentMessages = conversationHistory.slice(-4)
     
     if (messagesToSummarize.length > 0) {
-      conversationSummary = await summarizeConversation(messagesToSummarize, apiKey)
+      conversationSummary = await summarizeConversation(messagesToSummarize, apiKey, generativeModel)
     }
     
-    const recentConversation = recentMessages
-      .map(msg => `${msg.role}: ${msg.content}`)
-      .join('\n')
-    
-    conversationSummary = conversationSummary 
-      ? `Previous conversation summary: ${conversationSummary}\n\nRecent conversation:\n${recentConversation}`
-      : `Recent conversation:\n${recentConversation}`
+    // Convert only recent messages to chat history
+    history = recentMessages.map(msg => ({
+      role: msg.role === 'assistant' ? 'model' as const : 'user' as const,
+      parts: [{ text: msg.content }]
+    }))
   } else if (conversationHistory.length > 0) {
-    // If less than 4 messages, include all without summarizing
-    conversationSummary = conversationHistory
-      .map(msg => `${msg.role}: ${msg.content}`)
-      .join('\n')
+    // If 4 or fewer messages, include all without summarizing
+    history = conversationHistory.map(msg => ({
+      role: msg.role === 'assistant' ? 'model' as const : 'user' as const,
+      parts: [{ text: msg.content }]
+    }))
   }
   
-  const isFollowUp = await isFollowUpQuestion(question)
+  const systemInstruction = `You are an AI assistant for Inovus Labs IEDC at Kristu Jyoti College (inovuslabs.org, @inovuslabs). You MUST only use the provided context to answer questions.
+
+CRITICAL RULES:
+- You can ONLY answer questions about Inovus Labs IEDC using the provided context
+- If the answer is not found in the provided context, you MUST respond: "I don't have that specific information in my knowledge base. Please check our website at inovuslabs.org or follow our social media @inovuslabs for the most up-to-date information."
+- NEVER make up or infer information not explicitly provided in the context
+- NEVER use external knowledge beyond what's provided
+- For off-topic questions: "I can only answer questions related to Inovus Labs IEDC. Please ask about our programs, events, or initiatives."
+- Use proper HTML with semantic structure (body tag)
+- NO markdown formatting, NO CSS styles
+- Maintain a friendly, helpful tone
+- Use emojis appropriately to enhance engagement
+${!isFollowUp ? '\n- Valid topics: programs, events, startups, innovation, entrepreneurship, workshops, mentorship, funding opportunities' : ''}
+${isFollowUp ? '\n- Build naturally on the previous conversation context' : ''}
+${!isFollowUp ? '\n- Provide actionable next steps when applicable' : ''}
+
+KNOWLEDGE BASE:
+${context}
+
+${liveData ? `LIVE DATA:\n${liveData}` : ''}
+
+${conversationSummary ? `CONVERSATION SUMMARY (older messages):\n${conversationSummary}` : ''}`
+
+  const client = getGeminiClient(apiKey, generativeModel)
+  const chat = client.createChat(systemInstruction, history)
   
-  const prompt = await generateFollowUpPrompt(
-    question, 
-    context, 
-    liveData, 
-    conversationSummary, 
-    isFollowUp
-  )
+  console.log(`--- Using multi-turn chat with ${history.length} recent messages in history${conversationSummary ? ' (with summary of older messages)' : ''}.`)
+  
+  const response = await chat.sendMessage({
+    message: question
+  })
 
-  console.log(`--- Generated prompt for Gemini.`)
-  // console.log(`\n\n${prompt}\n\n`)
-
-  const client = getGeminiClient(apiKey)
-  return await client.generateContent(prompt)
+  return response.text
 }
 
 
@@ -268,19 +292,27 @@ export async function askGemini(
  * @param lastAssistantMessage - The last message from the assistant
  * @param conversationContext - The context of the conversation
  * @param apiKey - The Gemini API key
+ * @param generativeModel - Optional generative model name
  * @returns A promise that resolves to an array of follow-up questions
  */
 
 export async function generateFollowUpSuggestions(
   lastAssistantMessage: string,
   conversationContext: string,
-  apiKey: string
+  apiKey: string,
+  generativeModel?: string
 ): Promise<string[]> {
-  const prompt = `
-<system_role>
-Generate relevant follow-up questions based on the assistant's response and conversation context.
-</system_role>
+  const systemInstruction = `Generate relevant follow-up questions based on the assistant's response and conversation context.
 
+RULES:
+- Generate exactly 3 specific and actionable follow-up questions
+- Questions should be relevant to Inovus Labs IEDC topics
+- Make them natural conversation continuations
+- Focus on practical next steps or deeper information
+- One question per line, no numbering or bullets
+- Return exactly 3 questions, one per line`
+
+  const prompt = `
 <context>
 <assistant_response>
 ${lastAssistantMessage}
@@ -290,23 +322,11 @@ ${lastAssistantMessage}
 ${conversationContext}
 </conversation_context>
 </context>
-
-<instructions>
-- Generate exactly 3 specific and actionable follow-up questions
-- Questions should be relevant to Inovus Labs IEDC topics
-- Make them natural conversation continuations
-- Focus on practical next steps or deeper information
-- One question per line, no numbering or bullets
-</instructions>
-
-<output_format>
-Return exactly 3 questions, one per line.
-</output_format>
 `.trim()
 
   try {
-    const client = getGeminiClient(apiKey)
-    const suggestions = await client.generateContent(prompt)
+    const client = getGeminiClient(apiKey, generativeModel)
+    const suggestions = await client.generateContent(prompt, systemInstruction)
       .split('\n')
       .filter(line => line.trim().length > 0)
       .slice(0, 3)

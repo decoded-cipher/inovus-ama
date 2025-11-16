@@ -42,7 +42,11 @@ router.post('/ask', async (c) => {
     //   return c.json({ answer: "Sorry, I can only answer questions about Inovus Labs." })
     // }
 
-    const embedding = await getEmbedding(question, c.env.GEMINI_API_KEY)
+    const embedding = await getEmbedding(
+      question, 
+      c.env.GEMINI_API_KEY,
+      c.env.GEMINI_EMBEDDING_MODEL
+    )
     const matches = await searchVectorizeDB(embedding, c.env)
     const contextChunks = matches.map(m => m.content)
     
@@ -50,7 +54,14 @@ router.post('/ask', async (c) => {
     // const liveData = requireLiveData ? await getLiveMCPData() : ''
     const liveData = ''
 
-    const answer = await askGemini(question, contextChunks, liveData, validatedHistory, c.env.GEMINI_API_KEY)
+    const answer = await askGemini(
+      question, 
+      contextChunks, 
+      liveData, 
+      validatedHistory, 
+      c.env.GEMINI_API_KEY,
+      c.env.GEMINI_GENERATIVE_MODEL
+    )
     const references = matches.map(m => m.metadata)
 
     console.log(`\n\n--- Answer generated successfully.\n`);
